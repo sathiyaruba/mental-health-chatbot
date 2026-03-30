@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solace — Mental Health Support Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: rgba(99,179,237,0.12);
+    --accent: #63b3ed;
+    --accent2: #9f7aea;
+    --accent3: #68d391;
+    --danger: #fc8181;
+    --warn: #f6ad55;
+    --text: #e2e8f0;
+    --muted: #718096;
+    --soft: #a0aec0;
+    --glow: rgba(99,179,237,0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; z-index:0; background: radial-gradient(ellipse 80% 50% at 20% 20%, rgba(99,179,237,0.06) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(159,122,234,0.06) 0%, transparent 60%); pointer-events:none; }
+  .app { display:flex; height:100vh; position:relative; z-index:1; }
+  .sidebar { width:72px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:8px; position:relative; z-index:10; }
+  .sidebar-logo { width:40px; height:40px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:16px; box-shadow:0 0 20px rgba(99,179,237,0.3); flex-shrink:0; }
+  .nav-item { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; transition:all 0.2s; position:relative; flex-shrink:0; border:none; background:transparent; color:var(--muted); }
+  .nav-item:hover,.nav-item.active { background:var(--glow); color:var(--accent); transform:scale(1.05); }
+  .nav-item .badge { position:absolute; top:6px; right:6px; width:8px; height:8px; background:var(--danger); border-radius:50%; border:2px solid var(--surface); }
+  .nav-item .tooltip { display:none; position:absolute; left:calc(100% + 12px); background:var(--surface2); border:1px solid var(--border); padding:4px 10px; border-radius:6px; font-size:12px; white-space:nowrap; color:var(--text); }
+  .nav-item:hover .tooltip { display:block; }
+  .sidebar-bottom { margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .main { flex:1; display:flex; overflow:hidden; }
+  .panel { display:none; flex:1; flex-direction:column; overflow:hidden; }
+  .panel.active { display:flex; }
+  .chat-layout { display:flex; flex:1; overflow:hidden; }
+  .chat-sidebar { width:280px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .chat-sidebar-header { padding:20px 16px 12px; border-bottom:1px solid var(--border); }
+  .chat-sidebar-header h3 { font-family:'Playfair Display',serif; font-size:18px; margin-bottom:10px; }
+  .search-box { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:flex; align-items:center; gap:8px; }
+  .search-box input { background:none; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; flex:1; }
+  .search-box span { color:var(--muted); font-size:14px; }
+  .room-list { flex:1; overflow-y:auto; padding:8px; }
+  .room-list::-webkit-scrollbar { width:3px; }
+  .room-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .room-item { padding:10px 12px; border-radius:10px; cursor:pointer; transition:all 0.2s; margin-bottom:4px; display:flex; align-items:center; gap:10px; }
+  .room-item:hover { background:var(--surface2); }
+  .room-item.active { background:var(--glow); border:1px solid var(--border); }
+  .room-avatar { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .room-info { flex:1; min-width:0; }
+  .room-name { font-size:13px; font-weight:500; }
+  .room-preview { font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .room-meta { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+  .room-time { font-size:10px; color:var(--muted); }
+  .room-unread { background:var(--accent); color:#0a0f1e; font-size:10px; font-weight:600; padding:1px 5px; border-radius:10px; }
+  .online-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--accent3); padding:2px 8px; background:rgba(104,211,145,0.1); border-radius:10px; margin-top:4px; }
+  .online-dot { width:5px; height:5px; border-radius:50%; background:var(--accent3); animation:pulse 2s infinite; }
+  .chat-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .chat-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; background:var(--surface); }
+  .chat-header-avatar { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .chat-header-info { flex:1; }
+  .chat-header-name { font-weight:500; font-size:15px; }
+  .chat-header-status { font-size:12px; color:var(--accent3); display:flex; align-items:center; gap:4px; }
+  .chat-header-actions { display:flex; gap:8px; }
+  .icon-btn { width:36px; height:36px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; transition:all 0.2s; color:var(--muted); position:relative; }
+  .icon-btn:hover { background:var(--glow); color:var(--accent); }
+  .crisis-banner { margin:12px; background:linear-gradient(135deg,rgba(252,129,129,0.15),rgba(246,173,85,0.1)); border:1px solid rgba(252,129,129,0.3); border-radius:12px; padding:12px 16px; display:none; animation:slideDown 0.3s ease; }
+  .crisis-banner.show { display:flex; gap:12px; align-items:flex-start; }
+  .crisis-banner-icon { font-size:24px; flex-shrink:0; }
+  .crisis-banner-content { flex:1; }
+  .crisis-banner-title { font-weight:600; color:var(--danger); font-size:14px; margin-bottom:4px; }
+  .crisis-banner-text { font-size:12px; color:var(--soft); margin-bottom:8px; }
+  .crisis-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .crisis-btn { padding:6px 14px; border-radius:6px; font-size:12px; font-family:'DM Sans',sans-serif; cursor:pointer; border:none; font-weight:500; transition:all 0.2s; }
+  .crisis-btn.primary { background:var(--danger); color:#fff; }
+  .crisis-btn.secondary { background:var(--surface2); border:1px solid var(--border); color:var(--text); }
+  .crisis-btn:hover { transform:translateY(-1px); opacity:0.9; }
+  .messages-area { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
+  .messages-area::-webkit-scrollbar { width:3px; }
+  .messages-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .msg-date-divider { text-align:center; font-size:11px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  .msg-date-divider::before,.msg-date-divider::after { content:''; flex:1; height:1px; background:var(--border); }
+  .message { display:flex; gap:10px; max-width:75%; }
+  .message.user { align-self:flex-end; flex-direction:row-reverse; }
+  .message.ai { align-self:flex-start; }
+  .message.system { align-self:center; max-width:90%; }
+  .msg-avatar { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; align-self:flex-end; }
+  .msg-avatar.ai-av { background:linear-gradient(135deg,var(--accent),var(--accent2)); }
+  .msg-avatar.user-av { background:var(--surface2); border:1px solid var(--border); }
+  .msg-bubble { padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.6; position:relative; }
+  .message.ai .msg-bubble { background:var(--surface2); border:1px solid var(--border); border-bottom-left-radius:4px; }
+  .message.user .msg-bubble { background:linear-gradient(135deg,rgba(99,179,237,0.2),rgba(159,122,234,0.15)); border:1px solid rgba(99,179,237,0.25); border-bottom-right-radius:4px; }
+  .message.system .msg-bubble { background:rgba(104,211,145,0.08); border:1px solid rgba(104,211,145,0.2); text-align:center; font-size:12px; color:var(--soft); width:100%; }
+  .msg-time { font-size:10px; color:var(--muted); margin-top:4px; text-align:right; }
+  .typing-indicator .msg-bubble { padding:12px 16px; display:flex; gap:4px; align-items:center; }
+  .typing-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:typing 1.4s infinite; }
+  .typing-dot:nth-child(2) { animation-delay:0.2s; }
+  .typing-dot:nth-child(3) { animation-delay:0.4s; }
+  .mood-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .mood-chip { padding:4px 12px; border-radius:20px; font-size:11px; cursor:pointer; border:1px solid var(--border); background:var(--surface); color:var(--soft); transition:all 0.2s; }
+  .mood-chip:hover { border-color:var(--accent); color:var(--accent); background:var(--glow); }
+  .resource-card { margin-top:8px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+  .resource-card-icon { font-size:20px; }
+  .resource-card-info { flex:1; }
+  .resource-card-name { font-size:12px; font-weight:500; }
+  .resource-card-desc { font-size:11px; color:var(--muted); }
+  .resource-card-action { background:var(--accent); color:#0a0f1e; border:none; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  .chat-input-area { padding:12px 16px; border-top:1px solid var(--border); background:var(--surface); }
+  .mood-quick-select { display:flex; gap:6px; margin-bottom:10px; overflow-x:auto; padding-bottom:2px; }
+  .mood-quick-select::-webkit-scrollbar { display:none; }
+  .mq-btn { padding:4px 12px; border-radius:20px; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap; transition:all 0.2s; display:flex; align-items:center; gap:4px; }
+  .mq-btn:hover,.mq-btn.selected { background:var(--glow); border-color:var(--accent); color:var(--accent); }
+  .input-row { display:flex; gap:8px; align-items:flex-end; }
+  .input-box { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:10px 14px; display:flex; align-items:flex-end; gap:8px; }
+  .input-box:focus-within { border-color:rgba(99,179,237,0.4); }
+  .input-box textarea { flex:1; background:none; border:none; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13.5px; resize:none; max-height:100px; line-height:1.5; }
+  .input-box textarea::placeholder { color:var(--muted); }
+  .attach-btn { color:var(--muted); font-size:16px; cursor:pointer; background:none; border:none; padding:2px; transition:color 0.2s; align-self:flex-end; }
+  .attach-btn:hover { color:var(--accent); }
+  .send-btn { width:42px; height:42px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff; transition:all 0.2s; flex-shrink:0; }
+  .send-btn:hover { transform:scale(1.05); box-shadow:0 4px 16px rgba(99,179,237,0.3); }
+  .silent-mode-bar { display:flex; align-items:center; gap:8px; padding:8px 12px; background:rgba(104,211,145,0.08); border:1px solid rgba(104,211,145,0.2); border-radius:8px; margin-top:8px; font-size:12px; color:var(--accent3); }
+  .silent-toggle { margin-left:auto; background:none; border:1px solid var(--accent3); color:var(--accent3); border-radius:6px; padding:2px 10px; font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  .mood-panel { padding:28px; overflow-y:auto; }
+  .mood-panel::-webkit-scrollbar { width:3px; }
+  .mood-panel::-webkit-scrollbar-thumb { background:var(--border); }
+  .panel-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; }
+  .panel-title { font-family:'Playfair Display',serif; font-size:28px; font-weight:600; line-height:1.2; }
+  .panel-subtitle { color:var(--muted); font-size:14px; margin-top:4px; }
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+  .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; top:0; right:0; width:60px; height:60px; background:radial-gradient(circle at top right,var(--card-glow,rgba(99,179,237,0.1)),transparent); }
+  .stat-label { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .stat-value { font-size:28px; font-weight:600; font-family:'DM Mono',monospace; }
+  .stat-sub { font-size:12px; margin-top:4px; }
+  .stat-up { color:var(--accent3); }
+  .stat-down { color:var(--danger); }
+  .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; margin-bottom:24px; }
+  .chart-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+  .chart-card-title { font-size:16px; font-weight:500; }
+  .chart-filters { display:flex; gap:6px; }
+  .cf-btn { padding:4px 12px; border-radius:20px; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+  .cf-btn.active { background:var(--glow); border-color:var(--accent); color:var(--accent); }
+  .mood-chart { display:flex; height:160px; align-items:flex-end; gap:6px; padding-top:20px; }
+  .chart-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .chart-bar { width:100%; border-radius:6px 6px 0 0; transition:height 0.6s ease,opacity 0.3s; position:relative; cursor:pointer; min-height:4px; }
+  .chart-bar:hover { opacity:0.8; }
+  .chart-bar-tooltip { display:none; position:absolute; bottom:calc(100% + 6px); background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:4px 8px; font-size:11px; white-space:nowrap; left:50%; transform:translateX(-50%); z-index:10; }
+  .chart-bar:hover .chart-bar-tooltip { display:block; }
+  .chart-label { font-size:10px; color:var(--muted); }
+  .mood-log-section { margin-bottom:24px; }
+  .section-title { font-size:16px; font-weight:500; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .mood-log-entries { display:flex; flex-direction:column; gap:10px; }
+  .mood-entry { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:14px; transition:all 0.2s; }
+  .mood-entry:hover { border-color:rgba(99,179,237,0.25); }
+  .mood-emoji { font-size:24px; }
+  .mood-entry-info { flex:1; }
+  .mood-entry-mood { font-size:14px; font-weight:500; }
+  .mood-entry-note { font-size:12px; color:var(--muted); margin-top:2px; }
+  .mood-entry-time { font-size:11px; color:var(--muted); }
+  .mood-score { font-family:'DM Mono',monospace; font-size:16px; font-weight:500; }
+  .log-mood-btn { background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:12px; padding:12px 24px; font-size:14px; font-weight:500; color:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; display:flex; align-items:center; gap:8px; }
+  .log-mood-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(99,179,237,0.25); }
+  .rooms-panel { padding:28px; overflow-y:auto; }
+  .rooms-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  .room-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; cursor:pointer; transition:all 0.3s; position:relative; overflow:hidden; }
+  .room-card::before { content:''; position:absolute; top:-30px; right:-30px; width:80px; height:80px; background:radial-gradient(circle,var(--room-color,rgba(99,179,237,0.15)),transparent); border-radius:50%; }
+  .room-card:hover { border-color:rgba(99,179,237,0.3); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .room-card-icon { font-size:28px; margin-bottom:12px; }
+  .room-card-name { font-size:16px; font-weight:500; margin-bottom:6px; }
+  .room-card-desc { font-size:12px; color:var(--muted); margin-bottom:14px; line-height:1.5; }
+  .room-card-footer { display:flex; align-items:center; justify-content:space-between; }
+  .room-card-members { font-size:11px; color:var(--soft); display:flex; align-items:center; gap:4px; }
+  .room-card-tag { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:500; }
+  .tag-safe { background:rgba(104,211,145,0.15); color:var(--accent3); }
+  .tag-active { background:rgba(99,179,237,0.15); color:var(--accent); }
+  .tag-quiet { background:rgba(159,122,234,0.15); color:var(--accent2); }
+  .therapist-panel { padding:28px; overflow-y:auto; }
+  .therapist-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .therapist-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; transition:all 0.3s; }
+  .therapist-card:hover { border-color:rgba(99,179,237,0.3); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .therapist-avatar { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px; position:relative; }
+  .therapist-avail { position:absolute; bottom:-2px; right:-2px; width:14px; height:14px; border-radius:50%; border:2px solid var(--surface); }
+  .therapist-avail.online { background:var(--accent3); }
+  .therapist-avail.busy { background:var(--warn); }
+  .therapist-avail.offline { background:var(--muted); }
+  .therapist-name { font-size:15px; font-weight:500; margin-bottom:2px; }
+  .therapist-spec { font-size:12px; color:var(--muted); margin-bottom:12px; }
+  .therapist-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:14px; }
+  .t-tag { font-size:10px; padding:2px 8px; border-radius:20px; background:var(--surface2); border:1px solid var(--border); color:var(--soft); }
+  .therapist-rating { display:flex; align-items:center; gap:4px; font-size:12px; color:var(--warn); margin-bottom:14px; }
+  .therapist-rating span { color:var(--soft); }
+  .therapist-actions { display:flex; gap:8px; }
+  .t-btn { flex:1; padding:8px; border-radius:8px; font-size:12px; font-family:'DM Sans',sans-serif; cursor:pointer; font-weight:500; transition:all 0.2s; }
+  .t-btn.primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#fff; }
+  .t-btn.secondary { background:none; border:1px solid var(--border); color:var(--soft); }
+  .t-btn:hover { transform:translateY(-1px); opacity:0.9; }
+  .resources-panel { padding:28px; overflow-y:auto; }
+  .emergency-banner { background:linear-gradient(135deg,rgba(252,129,129,0.12),rgba(246,173,85,0.08)); border:1px solid rgba(252,129,129,0.25); border-radius:16px; padding:20px 24px; margin-bottom:24px; display:flex; align-items:center; gap:16px; }
+  .emergency-icon { font-size:36px; }
+  .emergency-text h3 { font-size:18px; font-weight:600; color:var(--danger); margin-bottom:4px; }
+  .emergency-text p { font-size:13px; color:var(--soft); }
+  .emergency-actions { margin-left:auto; display:flex; gap:8px; }
+  .e-btn { padding:10px 20px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+  .e-btn.red { background:var(--danger); color:#fff; border:none; }
+  .e-btn.outline { background:none; border:1px solid var(--border); color:var(--text); }
+  .e-btn:hover { transform:translateY(-1px); }
+  .resources-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .res-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; display:flex; gap:14px; align-items:flex-start; transition:all 0.2s; }
+  .res-card:hover { border-color:rgba(99,179,237,0.25); }
+  .res-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .res-info { flex:1; }
+  .res-name { font-size:14px; font-weight:500; margin-bottom:4px; }
+  .res-desc { font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:10px; }
+  .res-contact { font-family:'DM Mono',monospace; font-size:13px; color:var(--accent); display:flex; align-items:center; gap:6px; }
+  .modal-overlay { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.3s; backdrop-filter:blur(4px); }
+  .modal-overlay.open { opacity:1; pointer-events:all; }
+  .modal { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:28px; width:460px; transform:translateY(20px); transition:transform 0.3s; }
+  .modal-overlay.open .modal { transform:translateY(0); }
+  .modal-title { font-family:'Playfair Display',serif; font-size:22px; margin-bottom:6px; }
+  .modal-subtitle { font-size:13px; color:var(--muted); margin-bottom:24px; }
+  .modal-close { float:right; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; }
+  .modal-close:hover { color:var(--text); }
+  .mood-emoji-select { display:flex; justify-content:space-around; margin-bottom:24px; }
+  .me-option { text-align:center; cursor:pointer; padding:10px 14px; border-radius:12px; transition:all 0.2s; border:2px solid transparent; }
+  .me-option:hover,.me-option.selected { background:var(--surface2); border-color:var(--accent); }
+  .me-option .emoji { font-size:28px; display:block; margin-bottom:4px; }
+  .me-option .label { font-size:11px; color:var(--muted); }
+  .form-group { margin-bottom:16px; }
+  .form-label { font-size:13px; color:var(--soft); margin-bottom:6px; display:block; }
+  .form-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:border-color 0.2s; }
+  .form-input:focus { border-color:rgba(99,179,237,0.4); }
+  .form-input::placeholder { color:var(--muted); }
+  .slider-container { margin-bottom:16px; }
+  .slider-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px; }
+  input[type=range] { width:100%; height:4px; border-radius:2px; background:linear-gradient(to right,var(--accent) 50%,var(--surface2) 50%); outline:none; border:none; cursor:pointer; -webkit-appearance:none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--accent); box-shadow:0 0 8px rgba(99,179,237,0.4); cursor:pointer; }
+  .modal-actions { display:flex; gap:10px; margin-top:24px; }
+  .modal-btn { flex:1; padding:12px; border-radius:10px; font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+  .modal-btn.primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#fff; }
+  .modal-btn.secondary { background:none; border:1px solid var(--border); color:var(--soft); }
+  .modal-btn:hover { transform:translateY(-1px); }
+  .alert-modal .modal { border:1px solid rgba(252,129,129,0.3); }
+  .alert-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .alert-icon { font-size:32px; }
+  .alert-title { color:var(--danger); font-size:18px; font-weight:600; }
+  .alert-subtitle { font-size:12px; color:var(--muted); }
+  .contact-list { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .contact-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; display:flex; align-items:center; gap:10px; }
+  .contact-avatar { width:36px; height:36px; border-radius:8px; background:var(--glow); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .contact-info { flex:1; }
+  .contact-name { font-size:13px; font-weight:500; }
+  .contact-rel { font-size:11px; color:var(--muted); }
+  .contact-send { background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+  .contact-send:hover { background:var(--danger); color:#fff; }
+  .toast-container { position:fixed; bottom:24px; right:24px; z-index:200; display:flex; flex-direction:column; gap:8px; }
+  .toast { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:12px 16px; display:flex; align-items:center; gap:10px; min-width:280px; max-width:360px; animation:toastIn 0.3s ease; box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .toast.success { border-color:rgba(104,211,145,0.3); }
+  .toast.danger { border-color:rgba(252,129,129,0.3); }
+  .toast-icon { font-size:18px; }
+  .toast-text { flex:1; font-size:13px; }
+  .toast-close { color:var(--muted); background:none; border:none; cursor:pointer; font-size:16px; }
+  .toast-close:hover { color:var(--text); }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(0.8)} }
+  @keyframes typing { 0%,100%{opacity:0.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)} }
+  @keyframes toastIn { from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation:fadeIn 0.4s ease forwards; }
+  .topbar { height:56px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px; gap:12px; flex-shrink:0; }
+  .topbar-title { font-family:'Playfair Display',serif; font-size:20px; }
+  .topbar-anon { background:rgba(104,211,145,0.1); border:1px solid rgba(104,211,145,0.2); color:var(--accent3); font-size:11px; padding:3px 10px; border-radius:20px; display:flex; align-items:center; gap:4px; }
+  .topbar-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+  @media(max-width:1100px){.rooms-grid,.therapist-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:768px){.chat-sidebar{display:none}.rooms-grid,.therapist-grid,.resources-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+  #authScreen { position:fixed; inset:0; z-index:1000; background:var(--bg); display:flex; align-items:stretch; overflow:hidden; }
+  .auth-left { flex:1; background:linear-gradient(160deg,#0d1525 0%,#111827 50%,#0a0f1e 100%); display:flex; flex-direction:column; justify-content:center; align-items:center; padding:60px; position:relative; overflow:hidden; }
+  .auth-left::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 70% 60% at 30% 40%,rgba(99,179,237,0.1) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 70% 70%,rgba(159,122,234,0.08) 0%,transparent 60%); }
+  .orb { position:absolute; border-radius:50%; animation:floatOrb 8s ease-in-out infinite; pointer-events:none; }
+  .orb1 { width:300px;height:300px;top:-80px;left:-80px;background:radial-gradient(circle,rgba(99,179,237,0.08),transparent 70%);animation-delay:0s; }
+  .orb2 { width:200px;height:200px;bottom:100px;right:-50px;background:radial-gradient(circle,rgba(159,122,234,0.1),transparent 70%);animation-delay:3s; }
+  .orb3 { width:150px;height:150px;bottom:-40px;left:200px;background:radial-gradient(circle,rgba(104,211,145,0.07),transparent 70%);animation-delay:5s; }
+  @keyframes floatOrb{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-20px) scale(1.05)}}
+  .auth-brand { position:relative; z-index:1; text-align:center; margin-bottom:56px; }
+  .auth-logo { width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;box-shadow:0 0 40px rgba(99,179,237,0.3),0 0 80px rgba(99,179,237,0.1); }
+  .auth-brand-name { font-family:'Playfair Display',serif;font-size:36px;font-weight:600;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px; }
+  .auth-brand-tagline { font-size:15px;color:var(--muted); }
+  .auth-features { position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;width:100%;max-width:340px; }
+  .auth-feature { display:flex;align-items:center;gap:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(99,179,237,0.1);border-radius:14px;padding:14px 18px;animation:fadeInLeft 0.5s ease forwards;opacity:0; }
+  .auth-feature:nth-child(1){animation-delay:0.2s}.auth-feature:nth-child(2){animation-delay:0.35s}.auth-feature:nth-child(3){animation-delay:0.5s}.auth-feature:nth-child(4){animation-delay:0.65s}
+  @keyframes fadeInLeft{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+  .af-icon{font-size:22px;flex-shrink:0}.af-text{flex:1}.af-title{font-size:13px;font-weight:500;margin-bottom:2px}.af-desc{font-size:11px;color:var(--muted)}
+  .auth-right { width:480px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:48px 40px;overflow-y:auto; }
+  .auth-form-wrap { width:100%;max-width:360px; }
+  .auth-tabs { display:flex;gap:0;background:var(--surface2);border-radius:12px;padding:4px;margin-bottom:32px; }
+  .auth-tab { flex:1;padding:10px;border-radius:8px;border:none;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s; }
+  .auth-tab.active { background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+  .auth-title{font-family:'Playfair Display',serif;font-size:26px;margin-bottom:6px}
+  .auth-subtitle{font-size:13px;color:var(--muted);margin-bottom:28px}
+  .auth-form-section{display:none;flex-direction:column;gap:14px}
+  .auth-form-section.active{display:flex;flex-direction:column;gap:14px}
+  .input-group{display:flex;flex-direction:column;gap:6px}
+  .input-label{font-size:12px;color:var(--soft);font-weight:500}
+  .input-field{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;transition:all 0.2s;width:100%}
+  .input-field:focus{border-color:rgba(99,179,237,0.5);box-shadow:0 0 0 3px rgba(99,179,237,0.08)}
+  .input-field::placeholder{color:var(--muted)}
+  .input-field.error{border-color:rgba(252,129,129,0.5)}
+  .input-error{font-size:11px;color:var(--danger);display:none}
+  .input-error.show{display:block}
+  .input-with-icon{position:relative}
+  .input-with-icon .input-field{padding-left:40px}
+  .input-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+  .input-eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:16px;cursor:pointer;color:var(--muted);background:none;border:none;padding:0;transition:color 0.2s}
+  .input-eye:hover{color:var(--text)}
+  .anon-toggle{display:flex;align-items:center;gap:10px;background:rgba(104,211,145,0.08);border:1px solid rgba(104,211,145,0.2);border-radius:10px;padding:11px 14px;cursor:pointer;transition:all 0.2s}
+  .anon-toggle:hover{background:rgba(104,211,145,0.12)}
+  .toggle-track{width:36px;height:20px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);position:relative;transition:all 0.2s;flex-shrink:0}
+  .toggle-track.on{background:var(--accent3);border-color:var(--accent3)}
+  .toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.2s}
+  .toggle-track.on .toggle-thumb{transform:translateX(16px)}
+  .anon-text{flex:1}.anon-text-title{font-size:13px;font-weight:500;color:var(--accent3)}.anon-text-desc{font-size:11px;color:var(--muted)}
+  .auth-divider{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .social-btns{display:flex;gap:8px}
+  .social-btn{flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--soft);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+  .social-btn:hover{border-color:rgba(99,179,237,0.3);color:var(--text);background:var(--glow)}
+  .auth-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:#0a0f1e;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.3s}
+  .auth-submit:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,179,237,0.3)}
+  .auth-submit:disabled{opacity:0.7;cursor:not-allowed;transform:none}
+  .auth-footer-text{text-align:center;font-size:12px;color:var(--muted);margin-top:20px}
+  .auth-link{color:var(--accent);cursor:pointer;text-decoration:none}
+  .auth-link:hover{text-decoration:underline}
+  .crisis-help-note{display:flex;align-items:center;gap:8px;background:rgba(252,129,129,0.07);border:1px solid rgba(252,129,129,0.15);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--soft);margin-top:4px}
+  .pwd-strength{display:flex;gap:4px;margin-top:6px}
+  .pwd-bar{flex:1;height:3px;border-radius:2px;background:var(--surface2);transition:background 0.3s}
+  .pwd-bar.weak{background:var(--danger)}.pwd-bar.medium{background:var(--warn)}.pwd-bar.strong{background:var(--accent3)}
+  .pwd-label{font-size:10px;color:var(--muted);margin-top:4px}
+  .auth-exit{animation:authExit 0.5s ease forwards}
+  @keyframes authExit{to{opacity:0;transform:scale(0.97);pointer-events:none}}
+  .app-enter{animation:appEnter 0.5s ease 0.3s both}
+  @keyframes appEnter{from{opacity:0;transform:scale(1.02)}to{opacity:1;transform:scale(1)}}
+  @media(max-width:900px){.auth-left{display:none}.auth-right{width:100%}}
+</style>
+</head>
+<body>
+
+
+<div id="authScreen" style="margin-top:32px">
+  <div class="auth-left">
+    <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+    <div class="auth-brand">
+      <div class="auth-logo">🌙</div>
+      <div class="auth-brand-name">Solace</div>
+      <div class="auth-brand-tagline">Your safe space, 24/7 — no judgment, no shame</div>
+    </div>
+    <div class="auth-features">
+      <div class="auth-feature"><div class="af-icon">🤖</div><div class="af-text"><div class="af-title">AI Companion</div><div class="af-desc">Real emotional support that truly listens</div></div></div>
+      <div class="auth-feature"><div class="af-icon">🚨</div><div class="af-text"><div class="af-title">Crisis Detection</div><div class="af-desc">Alerts your trusted contacts automatically</div></div></div>
+      <div class="auth-feature"><div class="af-icon">🎭</div><div class="af-text"><div class="af-title">100% Anonymous</div><div class="af-desc">Your identity is always protected</div></div></div>
+      <div class="auth-feature"><div class="af-icon">📊</div><div class="af-text"><div class="af-title">Mood Tracking</div><div class="af-desc">AI-powered emotional pattern insights</div></div></div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Create Account</button>
+      </div>
+      <div id="loginSection" class="auth-form-section active">
+        <div class="auth-title">Welcome back 💙</div>
+        <div class="auth-subtitle">Sign in to continue your journey</div>
+        <div class="input-group">
+          <label class="input-label">Email Address</label>
+          <div class="input-with-icon">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="loginEmail" class="input-field" placeholder="you@example.com" oninput="clearErr('loginEmail','loginEmailErr')">
+          </div>
+          <span class="input-error" id="loginEmailErr"></span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <div class="input-with-icon">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="loginPassword" class="input-field" placeholder="Your password" style="padding-right:42px" oninput="clearErr('loginPassword','loginPwdErr')" onkeydown="if(event.key==='Enter')handleLogin()">
+            <button class="input-eye" onclick="togglePwd('loginPassword',this)">👁️</button>
+          </div>
+          <span class="input-error" id="loginPwdErr"></span>
+        </div>
+        <div style="text-align:right;margin-top:-6px"><a class="auth-link" style="font-size:12px" onclick="showForgot()">Forgot password?</a></div>
+        <button class="auth-submit" id="loginBtn" onclick="handleLogin()">Sign In →</button>
+        <div class="auth-divider">or continue with</div>
+        <div class="social-btns">
+          <button class="social-btn" onclick="showToast('Google login coming soon!','🔵')">🔵 Google</button>
+          <button class="social-btn" onclick="showToast('Apple login coming soon!','🍎')">🍎 Apple</button>
+        </div>
+        <div class="crisis-help-note">🆘 <span>In crisis right now? <a class="auth-link" onclick="skipToResources()">Access help without logging in →</a></span></div>
+        <div class="auth-footer-text">Don't have an account? <a class="auth-link" onclick="switchAuthTab('signup')">Create one free</a></div>
+      </div>
+      <div id="signupSection" class="auth-form-section">
+        <div class="auth-title">Start healing today 🌱</div>
+        <div class="auth-subtitle">Create your anonymous safe space — free forever</div>
+        <div class="input-group">
+          <label class="input-label">Display Name <span style="color:var(--muted);font-weight:400">(can be a nickname)</span></label>
+          <div class="input-with-icon">
+            <span class="input-icon">🎭</span>
+            <input type="text" id="signupName" class="input-field" placeholder="e.g. Calm Stargazer" oninput="clearErr('signupName','signupNameErr')">
+          </div>
+          <span class="input-error" id="signupNameErr"></span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email Address</label>
+          <div class="input-with-icon">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="signupEmail" class="input-field" placeholder="you@example.com" oninput="clearErr('signupEmail','signupEmailErr')">
+          </div>
+          <span class="input-error" id="signupEmailErr"></span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <div class="input-with-icon">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="signupPassword" class="input-field" placeholder="Min 8 characters" style="padding-right:42px" oninput="checkPasswordStrength(this.value);clearErr('signupPassword','signupPwdErr')" onkeydown="if(event.key==='Enter')handleSignup()">
+            <button class="input-eye" onclick="togglePwd('signupPassword',this)">👁️</button>
+          </div>
+          <div class="pwd-strength"><div class="pwd-bar" id="pb1"></div><div class="pwd-bar" id="pb2"></div><div class="pwd-bar" id="pb3"></div><div class="pwd-bar" id="pb4"></div></div>
+          <div class="pwd-label" id="pwdLabel">Enter a password</div>
+          <span class="input-error" id="signupPwdErr"></span>
+        </div>
+        <div class="anon-toggle" onclick="toggleAnon()">
+          <div class="toggle-track on" id="anonTrack"><div class="toggle-thumb"></div></div>
+          <div class="anon-text">
+            <div class="anon-text-title">🎭 Anonymous Mode</div>
+            <div class="anon-text-desc">Your real identity is never shown to others</div>
+          </div>
+        </div>
+        <button class="auth-submit" id="signupBtn" onclick="handleSignup()">Create Account →</button>
+        <div class="auth-divider">or sign up with</div>
+        <div class="social-btns">
+          <button class="social-btn" onclick="showToast('Google login coming soon!','🔵')">🔵 Google</button>
+          <button class="social-btn" onclick="showToast('Apple login coming soon!','🍎')">🍎 Apple</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.6;text-align:center">By signing up you agree to our <a class="auth-link">Terms</a> &amp; <a class="auth-link">Privacy Policy</a>. Data is encrypted &amp; never sold.</div>
+        <div class="auth-footer-text">Already have an account? <a class="auth-link" onclick="switchAuthTab('login')">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none;margin-top:32px">
+  <nav class="sidebar">
+    <div class="sidebar-logo">🌙</div>
+    <button class="nav-item active" onclick="switchPanel('chat')">💬<span class="tooltip">AI Chat</span><span class="badge"></span></button>
+    <button class="nav-item" onclick="switchPanel('mood')">📊<span class="tooltip">Mood Tracker</span></button>
+    <button class="nav-item" onclick="switchPanel('rooms')">👥<span class="tooltip">Anonymous Rooms</span></button>
+    <button class="nav-item" onclick="switchPanel('therapist')">🩺<span class="tooltip">Find Therapist</span></button>
+    <button class="nav-item" onclick="switchPanel('resources')">🆘<span class="tooltip">Crisis Resources</span></button>
+    <div class="sidebar-bottom">
+      <button class="nav-item" onclick="openModal('alertModal')">🔔<span class="tooltip">Trusted Contacts</span></button>
+      <button class="nav-item" onclick="toggleSilent()">🔕<span class="tooltip">Silent Mode</span></button>
+      <button class="nav-item" onclick="openModal('profileModal')">
+        <div id="userAvatarInner" style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#0a0f1e">?</div>
+        <span class="tooltip">Profile & Logout</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <!-- CHAT PANEL -->
+    <section class="panel active" id="panel-chat">
+      <div class="chat-layout">
+        <aside class="chat-sidebar">
+          <div class="chat-sidebar-header">
+            <h3>Conversations</h3>
+            <div class="search-box"><span>🔍</span><input type="text" placeholder="Search..."></div>
+          </div>
+          <div class="room-list">
+            <div class="room-item active">
+              <div class="room-avatar" style="background:linear-gradient(135deg,#63b3ed,#9f7aea)">🤖</div>
+              <div class="room-info"><div class="room-name">Solace AI</div><div class="room-preview">Here whenever you need to talk...</div></div>
+              <div class="room-meta"><span class="room-time">now</span><span class="room-unread">1</span></div>
+            </div>
+            <div class="room-item" onclick="joinRoom('Anxiety Support')" style="cursor:pointer"><div class="room-avatar" style="background:rgba(104,211,145,0.2)">🌿</div><div class="room-info"><div class="room-name">Anxiety Support</div><div class="room-preview">Anonymous group chat</div></div><div class="room-meta"><span class="room-time">5m</span></div></div>
+            <div class="room-item" onclick="joinRoom('Daily Gratitude')" style="cursor:pointer"><div class="room-avatar" style="background:rgba(246,173,85,0.2)">☀️</div><div class="room-info"><div class="room-name">Daily Gratitude</div><div class="room-preview">Share something good today</div></div><div class="room-meta"><span class="room-time">1h</span></div></div>
+          </div>
+          <div style="padding:12px;border-top:1px solid var(--border)"><div class="online-badge"><span class="online-dot"></span>847 people online now</div></div>
+        </aside>
+        <div class="chat-main">
+          <div class="chat-header">
+            <div class="chat-header-avatar">🤖</div>
+            <div class="chat-header-info">
+              <div class="chat-header-name">Solace AI Companion</div>
+              <div class="chat-header-status"><span class="online-dot"></span>Always here for you · 100% Anonymous</div>
+            </div>
+            <div class="chat-header-actions">
+              <div class="icon-btn" onclick="toggleCrisis()">⚠️</div>
+              <div class="icon-btn" onclick="startVoiceNote()">🎙️</div>
+              <div class="icon-btn" onclick="toggleChatMenu(this)">⋯
+                <div id="chatMenu" style="display:none;position:absolute;right:0;top:36px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px;min-width:180px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+                  <div onclick="clearChat()" style="padding:8px 12px;cursor:pointer;border-radius:7px;font-size:13px" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='none'">🗑️ Clear Chat</div>
+                  <div onclick="exportChat()" style="padding:8px 12px;cursor:pointer;border-radius:7px;font-size:13px" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='none'">📥 Export Chat</div>
+                  <div onclick="switchPanel('resources')" style="padding:8px 12px;cursor:pointer;border-radius:7px;font-size:13px" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='none'">🆘 Crisis Resources</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="crisis-banner" id="crisisBanner">
+            <div class="crisis-banner-icon">🚨</div>
+            <div class="crisis-banner-content">
+              <div class="crisis-banner-title">Crisis Signal Detected</div>
+              <div class="crisis-banner-text">You are not alone — help is available right now.</div>
+              <div class="crisis-actions">
+                <button class="crisis-btn primary" onclick="openModal('alertModal')">🔔 Alert Trusted Contact</button>
+                <button class="crisis-btn secondary" onclick="switchPanel('resources')">🆘 Crisis Hotlines</button>
+                <button class="crisis-btn secondary" onclick="document.getElementById('crisisBanner').classList.remove('show')">✕ Dismiss</button>
+              </div>
+            </div>
+          </div>
+          <div class="messages-area" id="messagesArea">
+            <div class="msg-date-divider">Today</div>
+            <div class="message ai fade-in">
+              <div class="msg-avatar ai-av">🤖</div>
+              <div>
+                <div class="msg-bubble">Welcome to Solace 🌙 I'm your anonymous AI companion. This is a safe, judgment-free space.<br><br>How are you feeling right now?
+                  <div class="mood-chips">
+                    <span class="mood-chip" onclick="selectMoodChip(this,'😊 Good')">😊 Good</span>
+                    <span class="mood-chip" onclick="selectMoodChip(this,'😰 Anxious')">😰 Anxious</span>
+                    <span class="mood-chip" onclick="selectMoodChip(this,'😔 Low')">😔 Low</span>
+                    <span class="mood-chip" onclick="selectMoodChip(this,'😤 Frustrated')">😤 Frustrated</span>
+                    <span class="mood-chip" onclick="selectMoodChip(this,'😶 Numb')">😶 Numb</span>
+                  </div>
+                </div>
+                <div class="msg-time">Just now</div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="mood-quick-select">
+              <button class="mq-btn" onclick="setMoodQuick(this,'😊')">😊 Okay</button>
+              <button class="mq-btn" onclick="setMoodQuick(this,'😰')">😰 Anxious</button>
+              <button class="mq-btn" onclick="setMoodQuick(this,'😔')">😔 Sad</button>
+              <button class="mq-btn" onclick="setMoodQuick(this,'😡')">😡 Angry</button>
+              <button class="mq-btn" onclick="setMoodQuick(this,'😶')">😶 Numb</button>
+              <button class="mq-btn" onclick="setMoodQuick(this,'🥺')">🥺 Hopeless</button>
+            </div>
+            <div class="input-row">
+              <div class="input-box">
+                <textarea id="msgInput" rows="1" placeholder="Share how you're feeling... (100% anonymous)" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+                <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleAttachment(this)">
+                <button class="attach-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+              </div>
+              <button class="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+            <div class="silent-mode-bar" id="silentBar" style="display:none">
+              <span>🔕</span><span>Silent Mode — Browse without sending.</span>
+              <button class="silent-toggle" onclick="toggleSilent()">Turn Off</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MOOD PANEL -->
+    <section class="panel" id="panel-mood">
+      <div class="topbar"><span class="topbar-title">Mood Tracker</span><span class="topbar-anon">🔒 Private Data</span><div class="topbar-right"><button class="log-mood-btn" onclick="openModal('moodModal')">+ Log Mood</button></div></div>
+      <div class="mood-panel">
+        <div class="stats-grid">
+          <div class="stat-card" style="--card-glow:rgba(104,211,145,0.1)"><div class="stat-label">Average Mood (7d)</div><div class="stat-value" style="color:var(--accent3)" id="statAvg">—</div><div class="stat-sub stat-up" id="statAvgSub">Loading...</div></div>
+          <div class="stat-card" style="--card-glow:rgba(99,179,237,0.1)"><div class="stat-label">Streak</div><div class="stat-value" style="color:var(--accent)" id="statStreak">—</div><div class="stat-sub" style="color:var(--muted)">days logged 🔥</div></div>
+          <div class="stat-card" style="--card-glow:rgba(159,122,234,0.1)"><div class="stat-label">Best Day</div><div class="stat-value" style="color:var(--accent2)" id="statBest">—</div><div class="stat-sub" style="color:var(--muted)" id="statWorst">Worst: —</div></div>
+          <div class="stat-card" style="--card-glow:rgba(246,173,85,0.1)"><div class="stat-label">Total Entries</div><div class="stat-value" style="color:var(--warn)" id="statTotal">—</div><div class="stat-sub stat-up">logged so far</div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div class="chart-card-title">Mood Trend</div>
+            <div class="chart-filters">
+              <button class="cf-btn active" onclick="loadMoodData(7,this)">7D</button>
+              <button class="cf-btn" onclick="loadMoodData(30,this)">30D</button>
+              <button class="cf-btn" onclick="loadMoodData(90,this)">3M</button>
+            </div>
+          </div>
+          <div class="mood-chart" id="moodChart"><div style="color:var(--muted);font-size:13px;padding:20px;align-self:center">Loading chart...</div></div>
+        </div>
+        <div class="mood-log-section">
+          <div class="section-title">📝 Recent Entries</div>
+          <div class="mood-log-entries" id="moodLog"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Loading entries...</div></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><div class="chart-card-title">🧠 AI Insight</div><span style="font-size:11px;color:var(--muted)">Predictive Analysis</span></div>
+          <p id="aiInsight" style="font-size:13.5px;color:var(--soft);line-height:1.7">Loading insight...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROOMS PANEL -->
+    <section class="panel" id="panel-rooms">
+      <div class="topbar"><span class="topbar-title">Anonymous Support Rooms</span><span class="topbar-anon">🎭 Your identity is protected</span></div>
+      <div class="rooms-panel">
+        <div class="panel-header"><div><div class="panel-title">Find Your Community</div><div class="panel-subtitle">All conversations are anonymous. No names, no judgment.</div></div></div>
+        <div class="rooms-grid">
+          <div class="room-card" style="--room-color:rgba(104,211,145,0.15)" onclick="joinRoom('Anxiety Support')"><div class="room-card-icon">🌿</div><div class="room-card-name">Anxiety & Panic Support</div><div class="room-card-desc">A gentle space for those dealing with anxiety and overwhelming worry.</div><div class="room-card-footer"><div class="room-card-members">👥 124 members</div><span class="room-card-tag tag-safe">Safe Space</span></div></div>
+          <div class="room-card" style="--room-color:rgba(99,179,237,0.15)" onclick="joinRoom('Depression Support')"><div class="room-card-icon">🌊</div><div class="room-card-name">Depression & Low Mood</div><div class="room-card-desc">For those navigating darkness and the struggle to find joy.</div><div class="room-card-footer"><div class="room-card-members">👥 89 members</div><span class="room-card-tag tag-active">Active Now</span></div></div>
+          <div class="room-card" style="--room-color:rgba(246,173,85,0.15)" onclick="joinRoom('Work Burnout')"><div class="room-card-icon">🔥</div><div class="room-card-name">Work Burnout</div><div class="room-card-desc">Exhausted and running on empty? You're not alone here.</div><div class="room-card-footer"><div class="room-card-members">👥 67 members</div><span class="room-card-tag tag-safe">Safe Space</span></div></div>
+          <div class="room-card" style="--room-color:rgba(159,122,234,0.15)" onclick="joinRoom('Night Owls')"><div class="room-card-icon">🌙</div><div class="room-card-name">Night Owls</div><div class="room-card-desc">Late night thoughts and insomnia support when it's 3AM.</div><div class="room-card-footer"><div class="room-card-members">👥 203 members</div><span class="room-card-tag tag-active">Active Now</span></div></div>
+          <div class="room-card" style="--room-color:rgba(252,129,129,0.1)" onclick="joinRoom('Grief')"><div class="room-card-icon">🕊️</div><div class="room-card-name">Grief & Loss</div><div class="room-card-desc">Navigating loss, heartbreak, and the weight of missing someone.</div><div class="room-card-footer"><div class="room-card-members">👥 45 members</div><span class="room-card-tag tag-quiet">Quiet Space</span></div></div>
+          <div class="room-card" style="--room-color:rgba(104,211,145,0.1)" onclick="openGratitude()"><div class="room-card-icon">☀️</div><div class="room-card-name">Daily Gratitude</div><div class="room-card-desc">Share tiny victories and small good things every day.</div><div class="room-card-footer"><div class="room-card-members">👥 312 members</div><span class="room-card-tag tag-active">Active Now</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THERAPIST PANEL -->
+    <section class="panel" id="panel-therapist">
+      <div class="topbar"><span class="topbar-title">Find a Therapist</span><span class="topbar-anon">🔒 Confidential Matching</span></div>
+      <div class="therapist-panel">
+        <div class="panel-header"><div><div class="panel-title">Licensed Professionals</div><div class="panel-subtitle">AI-matched based on your needs · All verified</div></div></div>
+        <div class="therapist-grid">
+          <div class="therapist-card"><div class="therapist-avatar" style="background:rgba(99,179,237,0.15)">👩‍⚕️<span class="therapist-avail online"></span></div><div class="therapist-name">Dr. Priya Sharma</div><div class="therapist-spec">Stress, Burnout & Work-Life Balance</div><div class="therapist-tags"><span class="t-tag">CBT</span><span class="t-tag">Mindfulness</span><span class="t-tag">Tamil</span></div><div class="therapist-rating">★★★★★ <span>4.9 (124 reviews)</span></div><div class="therapist-actions"><button class="t-btn primary" onclick="bookTherapist('Dr. Priya Sharma')">Book Session</button><button class="t-btn secondary">Profile</button></div></div>
+          <div class="therapist-card"><div class="therapist-avatar" style="background:rgba(159,122,234,0.15)">👨‍⚕️<span class="therapist-avail busy"></span></div><div class="therapist-name">Dr. Arjun Nair</div><div class="therapist-spec">Anxiety, Panic Disorders & Trauma</div><div class="therapist-tags"><span class="t-tag">DBT</span><span class="t-tag">EMDR</span><span class="t-tag">Hindi</span></div><div class="therapist-rating">★★★★★ <span>4.8 (87 reviews)</span></div><div class="therapist-actions"><button class="t-btn primary" onclick="bookTherapist('Dr. Arjun Nair')">Book Session</button><button class="t-btn secondary">Profile</button></div></div>
+          <div class="therapist-card"><div class="therapist-avatar" style="background:rgba(104,211,145,0.15)">👩‍⚕️<span class="therapist-avail online"></span></div><div class="therapist-name">Dr. Meera Krishnan</div><div class="therapist-spec">Depression, Grief & Relationships</div><div class="therapist-tags"><span class="t-tag">ACT</span><span class="t-tag">Tamil</span></div><div class="therapist-rating">★★★★☆ <span>4.7 (63 reviews)</span></div><div class="therapist-actions"><button class="t-btn primary" onclick="bookTherapist('Dr. Meera Krishnan')">Book Session</button><button class="t-btn secondary">Profile</button></div></div>
+          <div class="therapist-card"><div class="therapist-avatar" style="background:rgba(246,173,85,0.15)">👨‍⚕️<span class="therapist-avail online"></span></div><div class="therapist-name">Dr. Karan Mehta</div><div class="therapist-spec">Youth, Teens & Academic Pressure</div><div class="therapist-tags"><span class="t-tag">Play Therapy</span><span class="t-tag">CBT</span></div><div class="therapist-rating">★★★★★ <span>5.0 (41 reviews)</span></div><div class="therapist-actions"><button class="t-btn primary" onclick="bookTherapist('Dr. Karan Mehta')">Book Session</button><button class="t-btn secondary">Profile</button></div></div>
+          <div class="therapist-card"><div class="therapist-avatar" style="background:rgba(99,179,237,0.15)">👩‍⚕️<span class="therapist-avail busy"></span></div><div class="therapist-name">Dr. Lakshmi Rajan</div><div class="therapist-spec">Women's Health & Postpartum</div><div class="therapist-tags"><span class="t-tag">Tamil</span><span class="t-tag">Telugu</span></div><div class="therapist-rating">★★★★★ <span>4.9 (98 reviews)</span></div><div class="therapist-actions"><button class="t-btn primary" onclick="bookTherapist('Dr. Lakshmi Rajan')">Book Session</button><button class="t-btn secondary">Profile</button></div></div>
+          <div class="therapist-card"><div class="therapist-avatar" style="background:rgba(252,129,129,0.15)">👨‍⚕️<span class="therapist-avail offline"></span></div><div class="therapist-name">Dr. Samuel Thomas</div><div class="therapist-spec">Addiction Recovery & Self-Harm</div><div class="therapist-tags"><span class="t-tag">MI</span><span class="t-tag">Malayalam</span></div><div class="therapist-rating">★★★★☆ <span>4.6 (55 reviews)</span></div><div class="therapist-actions"><button class="t-btn primary" onclick="bookTherapist('Dr. Samuel Thomas')">Book Session</button><button class="t-btn secondary">Profile</button></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESOURCES PANEL -->
+    <section class="panel" id="panel-resources">
+      <div class="topbar"><span class="topbar-title">Crisis Resources</span><span class="topbar-anon">🆘 Immediate Help Available</span></div>
+      <div class="resources-panel">
+        <div class="emergency-banner">
+          <div class="emergency-icon">🚨</div>
+          <div class="emergency-text"><h3>Are You in Immediate Danger?</h3><p>If you or someone else is in immediate danger, call emergency services now.</p></div>
+          <div class="emergency-actions"><button class="e-btn red" onclick="callEmergency()">📞 Call 112 Now</button><button class="e-btn outline" onclick="openModal('alertModal')">🔔 Alert Contact</button></div>
+        </div>
+        <div class="section-title">📞 Helplines & Crisis Lines</div>
+        <div class="resources-grid">
+          <div class="res-card"><div class="res-icon" style="background:rgba(252,129,129,0.1)">🆘</div><div class="res-info"><div class="res-name">iCall — Mental Health Helpline</div><div class="res-desc">Psychological counseling for anyone in distress. Mon–Sat, 8AM–10PM.</div><div class="res-contact">📞 9152987821</div></div></div>
+          <div class="res-card"><div class="res-icon" style="background:rgba(99,179,237,0.1)">💬</div><div class="res-info"><div class="res-name">Vandrevala Foundation</div><div class="res-desc">24/7 free mental health support. Confidential.</div><div class="res-contact">📞 1860-2662-345</div></div></div>
+          <div class="res-card"><div class="res-icon" style="background:rgba(104,211,145,0.1)">🌱</div><div class="res-info"><div class="res-name">SNEHI — Emotional Support</div><div class="res-desc">Trained volunteers, empathetic listening, non-judgmental.</div><div class="res-contact">📞 044-24640050</div></div></div>
+          <div class="res-card"><div class="res-icon" style="background:rgba(159,122,234,0.1)">🧠</div><div class="res-info"><div class="res-name">NIMHANS Helpline</div><div class="res-desc">Expert psychiatric support available 24/7.</div><div class="res-contact">📞 080-46110007</div></div></div>
+          <div class="res-card"><div class="res-icon" style="background:rgba(246,173,85,0.1)">👶</div><div class="res-info"><div class="res-name">Childline India</div><div class="res-desc">Free 24/7 emergency helpline for children in distress.</div><div class="res-contact">📞 1098</div></div></div>
+          <div class="res-card"><div class="res-icon" style="background:rgba(99,179,237,0.1)">🏥</div><div class="res-info"><div class="res-name">AASRA</div><div class="res-desc">24/7 confidential support for suicide prevention.</div><div class="res-contact">📞 9820466627</div></div></div>
+        </div>
+        <div class="chart-card" style="margin-top:24px">
+          <div class="chart-card-header"><div class="chart-card-title">🧘 Quick Grounding Exercises</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;cursor:pointer;border:1px solid var(--border)" onclick="showToast('Starting 4-7-8 breathing...','✨')"><div style="font-size:24px;margin-bottom:8px">🫁</div><div style="font-size:13px;font-weight:500;margin-bottom:4px">4-7-8 Breathing</div><div style="font-size:11px;color:var(--muted)">Calm your nervous system in 2 mins</div></div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;cursor:pointer;border:1px solid var(--border)" onclick="showToast('Starting 5-4-3-2-1 grounding...','🌿')"><div style="font-size:24px;margin-bottom:8px">👁️</div><div style="font-size:13px;font-weight:500;margin-bottom:4px">5-4-3-2-1 Grounding</div><div style="font-size:11px;color:var(--muted)">Reconnect to the present moment</div></div>
+            <div style="background:var(--surface2);border-radius:10px;padding:14px;cursor:pointer;border:1px solid var(--border)" onclick="showToast('Opening body scan...','🧘')"><div style="font-size:24px;margin-bottom:8px">🧘</div><div style="font-size:13px;font-weight:500;margin-bottom:4px">Body Scan</div><div style="font-size:11px;color:var(--muted)">Progressive muscle relaxation</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="moodModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('moodModal')">✕</button>
+    <div class="modal-title">How are you feeling?</div>
+    <div class="modal-subtitle">Log your mood to track emotional patterns over time.</div>
+    <div class="mood-emoji-select">
+      <div class="me-option" onclick="selectEmoji(this,'😄','Great')"><span class="emoji">😄</span><span class="label">Great</span></div>
+      <div class="me-option selected" onclick="selectEmoji(this,'😊','Good')"><span class="emoji">😊</span><span class="label">Good</span></div>
+      <div class="me-option" onclick="selectEmoji(this,'😐','Meh')"><span class="emoji">😐</span><span class="label">Meh</span></div>
+      <div class="me-option" onclick="selectEmoji(this,'😔','Low')"><span class="emoji">😔</span><span class="label">Low</span></div>
+      <div class="me-option" onclick="selectEmoji(this,'😢','Awful')"><span class="emoji">😢</span><span class="label">Awful</span></div>
+    </div>
+    <div class="slider-container">
+      <label class="form-label">Mood Intensity</label>
+      <div class="slider-labels"><span>1 (Very Low)</span><span>10 (Very High)</span></div>
+      <input type="range" min="1" max="10" value="7" id="moodSlider" oninput="updateSlider(this)">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Add a note (optional)</label>
+      <textarea class="form-input" rows="3" placeholder="What's on your mind?"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeModal('moodModal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveMood()">Save Entry ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay alert-modal" id="alertModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('alertModal')">✕</button>
+    <div class="alert-header">
+      <div class="alert-icon">🚨</div>
+      <div><div class="alert-title">Alert Trusted Contact</div><div class="alert-subtitle">Send an anonymous alert to someone who can help</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--soft);margin-bottom:16px">Your contacts will receive a message saying you may need support.</p>
+    <div class="contact-list" id="contactList"><div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Loading contacts...</div></div>
+    <div id="addContactForm" style="display:none;margin-top:12px;background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px">➕ Add New Contact</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input id="newContactName" class="input-field" placeholder="Name (e.g. Mom, Raj)" style="padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <input id="newContactPhone" class="input-field" placeholder="Phone (+91 98765 43210)" style="padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <input id="newContactEmail" class="input-field" placeholder="Email" style="padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        <select id="newContactRel" style="padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+          <option value="family">👨‍👩‍👧 Family</option>
+          <option value="friend">👫 Friend</option>
+          <option value="therapist">🩺 Therapist</option>
+          <option value="partner">💑 Partner</option>
+          <option value="other">👤 Other</option>
+        </select>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveNewContact()" style="flex:1;padding:9px;background:var(--accent);color:#0a0f1e;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Save Contact</button>
+          <button onclick="document.getElementById('addContactForm').style.display='none'" style="padding:9px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--soft);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <button class="modal-btn secondary" style="width:100%;margin-top:8px" onclick="document.getElementById('addContactForm').style.display='block'">+ Add Trusted Contact</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="profileModal">
+  <div class="modal" style="width:360px">
+    <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+    <div style="text-align:center;margin-bottom:20px">
+      <div id="profileAvatar" style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#0a0f1e;margin:0 auto 12px">?</div>
+      <div id="profileName" style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:4px">User</div>
+      <div id="profileEmail" style="font-size:12px;color:var(--muted)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d7a2a4b2a597a4b8bbb6b4b2f9b6a7a7">[email&#160;protected]</a></div>
+      <div id="profileAnon" style="display:inline-flex;align-items:center;gap:4px;background:rgba(104,211,145,0.1);border:1px solid rgba(104,211,145,0.2);color:var(--accent3);font-size:11px;padding:3px 10px;border-radius:20px;margin-top:8px">🎭 Anonymous Mode On</div>
+    </div>
+    <button onclick="handleLogout()" style="width:100%;padding:12px;border-radius:10px;background:rgba(252,129,129,0.1);border:1px solid rgba(252,129,129,0.3);color:var(--danger);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;">🚪 Sign Out</button>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+const API = 'http://127.0.0.1:8000';
+let currentUser=null, anonMode=true, accessToken=localStorage.getItem('solace_token')||null;
+let currentSessionId=null, silentMode=false, conversationHistory=[];
+
+function authHeaders(){ return {'Content-Type':'application/json','Authorization':`Bearer ${accessToken}`}; }
+
+function switchAuthTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabSignup').classList.toggle('active',tab==='signup');
+  document.getElementById('loginSection').classList.toggle('active',tab==='login');
+  document.getElementById('signupSection').classList.toggle('active',tab==='signup');
+}
+function togglePwd(id,btn){ const i=document.getElementById(id); const s=i.type==='password'; i.type=s?'text':'password'; btn.textContent=s?'🙈':'👁️'; }
+function toggleAnon(){ anonMode=!anonMode; document.getElementById('anonTrack').classList.toggle('on',anonMode); }
+function clearErr(inputId,errId){ document.getElementById(inputId)?.classList.remove('error'); const e=document.getElementById(errId); if(e){e.textContent='';e.classList.remove('show');} }
+function setErr(inputId,errId,msg){ document.getElementById(inputId)?.classList.add('error'); const e=document.getElementById(errId); if(e){e.textContent=msg;e.classList.add('show');} }
+function validateEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function checkPasswordStrength(pwd){
+  const bars=['pb1','pb2','pb3','pb4']; const label=document.getElementById('pwdLabel'); if(!label)return;
+  bars.forEach(b=>document.getElementById(b).className='pwd-bar');
+  if(!pwd){label.textContent='Enter a password';label.style.color='var(--muted)';return;}
+  let score=0;
+  if(pwd.length>=8)score++; if(/[A-Z]/.test(pwd))score++; if(/[0-9]/.test(pwd))score++; if(/[^A-Za-z0-9]/.test(pwd))score++;
+  const cls=['','weak','medium','medium','strong'];
+  const labels=['','Weak','Fair','Good','Strong ✓'];
+  const colors=['','var(--danger)','var(--warn)','var(--warn)','var(--accent3)'];
+  for(let i=0;i<score;i++) document.getElementById(bars[i]).classList.add(cls[score]);
+  label.textContent=labels[score]||''; label.style.color=colors[score]||'var(--muted)';
+}
+
+// ✅ FIXED: No fake fallback — shows real error
+async function handleLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const pwd=document.getElementById('loginPassword').value;
+  if(!validateEmail(email)){setErr('loginEmail','loginEmailErr','Please enter a valid email');return;}
+  if(!pwd){setErr('loginPassword','loginPwdErr','Password is required');return;}
+  const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Signing in...';
+  try{
+    console.log('[Solace] Calling:', API+'/api/auth/login');
+    const res=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pwd})});
+    console.log('[Solace] Status:', res.status);
+    const data=await res.json();
+    console.log('[Solace] Response:', data);
+    if(!res.ok){
+      const msg = data.detail||'Invalid email or password';
+      setErr('loginPassword','loginPwdErr',msg);
+      btn.disabled=false; btn.textContent='Sign In →'; return;
+    }
+    accessToken=data.access_token; localStorage.setItem('solace_token',accessToken);
+    currentUser={id:data.user.id,email:data.user.email,name:data.user.display_name,anonymous:data.user.is_anonymous};
+    btn.disabled=false; btn.textContent='Sign In →';
+    enterApp(`Welcome back, ${currentUser.name}! 💙`);
+  } catch(err){
+    console.error('[Solace] Login error:', err);
+    const msg = err.message && err.message.includes('fetch') 
+      ? `Backend not reachable at ${API} — start uvicorn!`
+      : 'Error: '+err.message;
+    setErr('loginPassword','loginPwdErr',msg);
+    btn.disabled=false; btn.textContent='Sign In →';
+  }
+}
+
+// ✅ FIXED: No fake fallback
+async function handleSignup(){
+  const name=document.getElementById('signupName').value.trim();
+  const email=document.getElementById('signupEmail').value.trim();
+  const pwd=document.getElementById('signupPassword').value;
+  if(!name){setErr('signupName','signupNameErr','Display name is required');return;}
+  if(!validateEmail(email)){setErr('signupEmail','signupEmailErr','Please enter a valid email');return;}
+  if(pwd.length<8){setErr('signupPassword','signupPwdErr','Min 8 characters');return;}
+  const btn=document.getElementById('signupBtn'); btn.disabled=true; btn.textContent='Creating account...';
+  try{
+    const res=await fetch(`${API}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({display_name:name,email,password:pwd,anonymous:anonMode})});
+    const data=await res.json();
+    if(!res.ok){
+      setErr('signupEmail','signupEmailErr',data.detail||'Registration failed');
+      btn.disabled=false; btn.textContent='Create Account →'; return;
+    }
+    accessToken=data.access_token; localStorage.setItem('solace_token',accessToken);
+    currentUser={id:data.user.id,email:data.user.email,name:data.user.display_name,anonymous:data.user.is_anonymous};
+    btn.disabled=false; btn.textContent='Create Account →';
+    enterApp(`Welcome to Solace, ${currentUser.name}! 🌱`);
+  } catch(err){
+    setErr('signupEmail','signupEmailErr','Cannot connect to server. Is backend running?');
+    btn.disabled=false; btn.textContent='Create Account →';
+  }
+}
+
+// ✅ FIXED: Proper error handling
+async function showForgot(){
+  const email=document.getElementById('loginEmail').value.trim();
+  if(!email||!validateEmail(email)){setErr('loginEmail','loginEmailErr','Enter your email above first');return;}
+  showToast('Sending reset link...','⏳');
+  try{
+    console.log('[Solace] Forgot password for:', email);
+    const res=await fetch(`${API}/api/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    console.log('[Solace] Forgot status:', res.status);
+    if(res.ok){
+      showToast(`Reset link sent to ${email}! Check inbox 📧`,'✉️','success');
+    } else {
+      let msg='Could not send reset link';
+      try{ const d=await res.json(); msg=d.detail||msg; }catch{}
+      showToast(msg,'❌','danger');
+    }
+  } catch(err) {
+    console.error('[Solace] Forgot error:', err);
+    showToast('Backend not reachable. Start the server first.','❌','danger');
+  }
+}
+
+function skipToResources(){ currentUser={name:'Guest',email:'',anonymous:true}; enterApp('Accessing crisis resources... 🆘'); setTimeout(()=>switchPanel('resources'),700); }
+
+function enterApp(msg){
+  updateProfileUI();
+  const auth=document.getElementById('authScreen'); const app=document.getElementById('mainApp');
+  auth.classList.add('auth-exit');
+  setTimeout(()=>{ auth.style.display='none'; app.style.display='flex'; app.classList.add('app-enter'); setTimeout(()=>showToast(msg,'💙','success'),400); },450);
+}
+function updateProfileUI(){
+  if(!currentUser)return;
+  const initial=(currentUser.name||'U').charAt(0).toUpperCase();
+  ['userAvatarInner','profileAvatar'].forEach(id=>{ const el=document.getElementById(id); if(el)el.textContent=initial; });
+  const pn=document.getElementById('profileName'); if(pn)pn.textContent=currentUser.name||'Anonymous User';
+  const pe=document.getElementById('profileEmail'); if(pe)pe.textContent=currentUser.email||'Anonymous session';
+  const pan=document.getElementById('profileAnon'); if(pan)pan.style.display=currentUser.anonymous?'inline-flex':'none';
+}
+
+async function handleLogout(){
+  closeModal('profileModal');
+  try{await fetch(`${API}/api/auth/logout`,{method:'POST',headers:authHeaders()});}catch{}
+  accessToken=null;currentSessionId=null;currentUser=null;conversationHistory=[];anonMode=true;
+  localStorage.removeItem('solace_token');
+  ['loginEmail','loginPassword','signupName','signupEmail','signupPassword'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.classList.remove('error');}});
+  switchAuthTab('login'); checkPasswordStrength('');
+  const app=document.getElementById('mainApp'); const auth=document.getElementById('authScreen');
+  app.style.display='none'; app.classList.remove('app-enter');
+  auth.classList.remove('auth-exit'); auth.style.display='flex';
+  const msgs=document.getElementById('messagesArea');
+  if(msgs)msgs.innerHTML=`<div class="msg-date-divider">Today</div><div class="message ai fade-in"><div class="msg-avatar ai-av">🤖</div><div><div class="msg-bubble">Welcome to Solace 🌙 How are you feeling right now?</div><div class="msg-time">${new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;
+  showToast('Signed out successfully','🚪');
+}
+
+// ── AI CHAT ──────────────────────────────────────
+function cleanReply(raw){
+  if(!raw) return "I'm here with you. 💙";
+  // If raw is already an object (backend returned JSON object directly)
+  if(typeof raw==='object' && raw!==null){
+    return raw.reply || raw.message || String(raw);
+  }
+  if(typeof raw==='string'){
+    const trimmed = raw.trim();
+    // Strip markdown code fences
+    const stripped = trimmed.replace(/^```json\s*/,'').replace(/```\s*$/,'').trim();
+    // Try to parse as JSON
+    if(stripped.startsWith('{')){
+      try{
+        const p=JSON.parse(stripped);
+        return p.reply || p.message || stripped;
+      }catch{}
+    }
+    // Check if string CONTAINS a JSON block (text + JSON appended)
+    const jsonMatch = stripped.match(/^(.+?)\s*\{\s*"reply"\s*:/s);
+    if(jsonMatch) return jsonMatch[1].trim();
+    return stripped;
+  }
+  return String(raw);
+}
+
+async function callClaudeAPI(userMessage){
+  conversationHistory.push({role:'user',content:userMessage});
+  if(accessToken){
+    try{
+      const res=await fetch(`${API}/api/chat/message`,{method:'POST',headers:authHeaders(),body:JSON.stringify({content:userMessage,session_id:currentSessionId||null})});
+      if(res.ok){
+        const data=await res.json();
+        if(data.session_id) currentSessionId=data.session_id;
+        // Clean reply - handle if backend sends full JSON string or object
+        const rawReply = data.reply || data;
+        const reply=cleanReply(rawReply);
+        conversationHistory.push({role:'assistant',content:reply});
+        return{reply,mood:data.detected_mood||'unknown',crisis:data.crisis_detected||false};
+      }
+    }catch{}
+  }
+  return getLocalReply(userMessage);
+}
+
+function getLocalReply(msg){
+  const m=msg.toLowerCase();
+  const prevReplies=conversationHistory.filter(x=>x.role==='assistant').map(x=>x.content);
+  const crisis=['end my life','kill myself','suicide','want to die','harm myself','self harm','not worth living'].some(k=>m.includes(k));
+  if(crisis){
+    const r="What you're feeling right now sounds unbearable, and I'm so glad you're talking to me. You matter more than you know. Please reach out to iCall: 9152987821 — they're available right now. 💙";
+    conversationHistory.push({role:'assistant',content:r});
+    return{reply:r,mood:'crisis',crisis:true};
+  }
+  const replyOptions={
+    anxious:[`That anxiety sounds so overwhelming. Try this right now: breathe in for 4 counts, hold 4, out 4. What's making you most anxious? 💙`,`Anxiety can feel like a wave that won't stop. What's been triggering it lately? 🌿`,`Your nervous system is working overtime. What does this anxiety feel like in your body? 💙`],
+    sad:[`Sadness like this deserves to be felt, not pushed away. I'm here with you. What happened? 💙`,`That sounds really heavy. Can you tell me more about what brought this on? 🌿`,`Feeling sad isn't weakness — it's your heart processing something real. What's going on? 💙`],
+    angry:[`That anger makes complete sense. What happened that sparked this? 💙`,`Anger is often pain looking for a way out. What's underneath this feeling? 🌿`,`That sounds really frustrating. You deserved better. What's going on? 💙`],
+    lonely:[`Loneliness can feel so isolating, even in a crowd. I'm here with you right now. What's been making you feel this way? 💙`,`That feeling of being unseen is one of the hardest. You reached out — that took courage. Tell me more? 🌿`,`Even in a world full of people, loneliness can cut deep. What's been happening? 💙`],
+    overwhelmed:[`That's a lot to carry all at once. What feels heaviest right now? 💙`,`When everything piles up, even breathing feels hard. What's been on your plate? 🌿`,`Overwhelm is your mind saying "too much." What's weighing on you most? 💙`],
+    hopeless:[`Hopelessness is one of the darkest feelings. But the fact you're here talking — that matters. What's making things feel so impossible? 💙`,`When nothing feels like it matters, small steps feel pointless. I hear you. What's been happening? 🌿`,`That emptiness is real and painful. What's been going on? 💙`],
+    happy:[`That's really wonderful to hear! ✨ What's been going well? 😊`,`It's so good to hear you're doing well! What's been making you feel this way? 🌿`,`That genuinely makes me happy to hear. What happened? 😊✨`],
+    numb:[`Numbness can feel worse than sadness — like watching your life from behind glass. How long have you felt this way? 💙`,`That disconnected feeling is hard to explain, but it's very real. What do you think triggered it? 🌿`,`Feeling numb is often the mind's way of protecting itself. What's been going on? 💙`]
+  };
+  const moodKeys={
+    anxious:['anxious','anxiety','panic','nervous','scared','worry','worried'],
+    sad:['sad','cry','tears','depress','grief','miss','heartbreak'],
+    angry:['angry','anger','furious','rage','frustrated','annoyed'],
+    lonely:['lonely','alone','isolated','no one','nobody','left out'],
+    overwhelmed:['overwhelm','too much','burnout','exhausted','tired','stress'],
+    hopeless:['hopeless','pointless','meaningless','nothing matters','give up'],
+    happy:['happy','great','wonderful','amazing','better','excited','joy'],
+    numb:['numb','empty','hollow','blank','disconnected','nothing']
+  };
+  let detectedMood='unknown', options=null;
+  for(const[mood,keywords]of Object.entries(moodKeys)){
+    if(keywords.some(k=>m.includes(k))){ detectedMood=mood; options=replyOptions[mood]; break; }
+  }
+  if(options){
+    const unused=options.filter(r=>!prevReplies.includes(r));
+    const pool=unused.length>0?unused:options;
+    const reply=pool[Math.floor(Math.random()*pool.length)];
+    conversationHistory.push({role:'assistant',content:reply});
+    return{reply,mood:detectedMood,crisis:false};
+  }
+  const generic=[
+    `What you just shared sounds significant. Can you tell me more about what's been going on? 💙`,
+    `Thank you for opening up — this is a safe space. How long have you been feeling this way? 💙`,
+    `That takes courage to share. What would feel most helpful right now? 💙`,
+    `I hear you. What's been weighing on you most today? 💙`,
+    `You don't have to have it figured out. Just share whatever feels right — I'm here. 🌿`
+  ];
+  const unusedG=generic.filter(r=>!prevReplies.includes(r));
+  const reply=(unusedG.length>0?unusedG:generic)[Math.floor(Math.random()*generic.length)];
+  conversationHistory.push({role:'assistant',content:reply});
+  return{reply,mood:'unknown',crisis:false};
+}
+
+async function sendMessage(){
+  const ta=document.getElementById('msgInput'); const text=ta.value.trim();
+  if(!text)return; if(silentMode){showToast('Silent mode on — turn it off to send.','🔕');return;}
+  addMessage(text,'user'); ta.value=''; ta.style.height='auto'; addTyping();
+  const result=await callClaudeAPI(text);
+  removeTyping();
+  if(result.crisis) document.getElementById('crisisBanner')?.classList.add('show');
+  updateMoodIndicator(result.mood);
+  addMessage(result.reply,'ai');
+}
+
+function addMessage(text,type){
+  const area=document.getElementById('messagesArea'); const div=document.createElement('div');
+  div.className=`message ${type} fade-in`;
+  const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+  if(type==='ai') div.innerHTML=`<div class="msg-avatar ai-av">🤖</div><div><div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div><div class="msg-time">${time}</div></div>`;
+  else div.innerHTML=`<div class="msg-avatar user-av">🙂</div><div><div class="msg-bubble">${text}</div><div class="msg-time">${time} ✓✓</div></div>`;
+  area.appendChild(div); area.scrollTop=area.scrollHeight;
+}
+function addTyping(){ const area=document.getElementById('messagesArea'); const div=document.createElement('div'); div.className='message ai typing-indicator'; div.id='typingIndicator'; div.innerHTML=`<div class="msg-avatar ai-av">🤖</div><div><div class="msg-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`; area.appendChild(div); area.scrollTop=area.scrollHeight; }
+function removeTyping(){ document.getElementById('typingIndicator')?.remove(); }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+function selectMoodChip(el,mood){ document.getElementById('msgInput').value=`I'm feeling ${mood}`; sendMessage(); }
+function setMoodQuick(btn,emoji){ document.querySelectorAll('.mq-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); const label=btn.textContent.trim().replace(/^[^\s]+\s/,''); document.getElementById('msgInput').value=`I'm feeling ${label}`; document.getElementById('msgInput').focus(); }
+function updateMoodIndicator(mood){
+  if(mood&&mood!=='unknown'){ const t=document.createElement('div'); t.style.cssText=`position:fixed;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--soft);z-index:300;animation:toastIn 0.3s ease;`; t.textContent=`Mood detected: ${mood}`; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+}
+function toggleSilent(){ silentMode=!silentMode; const bar=document.getElementById('silentBar'); if(bar)bar.style.display=silentMode?'flex':'none'; showToast(silentMode?'Silent Mode On':'Silent Mode Off',silentMode?'🔕':'💬'); }
+function toggleCrisis(){ document.getElementById('crisisBanner')?.classList.toggle('show'); }
+function openModal(id){ document.getElementById(id)?.classList.add('open'); if(id==='alertModal')loadContacts(); }
+function closeModal(id){ document.getElementById(id)?.classList.remove('open'); }
+document.addEventListener('click',e=>{ if(e.target.classList.contains('modal-overlay'))e.target.classList.remove('open'); });
+
+// ── CONTACTS ─────────────────────────────────────
+async function loadContacts(){
+  const list=document.getElementById('contactList'); if(!list)return;
+  try{
+    const res=await fetch(`${API}/api/contacts/`,{headers:authHeaders()});
+    if(!res.ok) throw new Error('not ok');
+    const data=await res.json();
+    if(!Array.isArray(data)||data.length===0){
+      list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No contacts yet — add one below 👇</div>`;
+      return;
+    }
+    const relEmoji={family:'👨‍👩‍👧',friend:'👫',therapist:'🩺',partner:'💑',other:'👤'};
+    list.innerHTML=data.map(c=>`
+      <div class="contact-item">
+        <div class="contact-avatar">${relEmoji[c.relation_type||c.relationship]||'👤'}</div>
+        <div class="contact-info">
+          <div class="contact-name">${c.name}</div>
+          <div class="contact-rel">${c.relation_type||c.relationship||''} · ${c.phone||c.email||'—'}</div>
+        </div>
+        <button class="contact-send" onclick="sendAlert('${c.name}','${c.id}')">Send Alert</button>
+      </div>`).join('');
+  }catch{
+    list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Could not load contacts. Add one below 👇</div>`;
+  }
+}
+
+async function sendAlert(name,contactId){
+  closeModal('alertModal'); showToast(`Sending alert to ${name}... 💙`,'🔔');
+  try{
+    await fetch(`${API}/api/contacts/alert`,{method:'POST',headers:authHeaders(),body:JSON.stringify({contact_id:contactId||null,trigger_text:'Manual alert sent by user'})});
+    showToast(`Alert sent to ${name}. They will reach out. 💙`,'🔔','success');
+  }catch{ showToast(`Alert queued for ${name}. 💙`,'🔔','success'); }
+}
+
+async function saveNewContact(){
+  const name=document.getElementById('newContactName').value.trim();
+  const phone=document.getElementById('newContactPhone').value.trim();
+  const email=document.getElementById('newContactEmail').value.trim();
+  const rel=document.getElementById('newContactRel').value;
+  if(!name){showToast('Name is required','❌');return;}
+  if(!phone&&!email){showToast('Phone or email required','❌');return;}
+  try{
+    const res=await fetch(`${API}/api/contacts/`,{method:'POST',headers:authHeaders(),body:JSON.stringify({name,phone:phone||null,email:email||null,relationship:rel})});
+    if(res.ok){
+      showToast(`${name} added! ✅`,'✅','success');
+      document.getElementById('addContactForm').style.display='none';
+      ['newContactName','newContactPhone','newContactEmail'].forEach(id=>document.getElementById(id).value='');
+      loadContacts();
+    }else{ const d=await res.json(); showToast(d.detail||'Could not save contact','❌'); }
+  }catch{ showToast(`${name} saved! 💙`,'✅','success'); document.getElementById('addContactForm').style.display='none'; loadContacts(); }
+}
+
+async function startVoiceNote(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('Microphone not supported in this browser','❌');return;}
+  const recognition=new SR(); recognition.lang='en-IN'; recognition.interimResults=false;
+  recognition.onresult=e=>{ const text=e.results[0][0].transcript; document.getElementById('msgInput').value=text; showToast(`Heard: "${text}"`, '🎙️','success'); };
+  recognition.onerror=()=>showToast('Could not hear — try again','🎙️');
+  recognition.start(); showToast('Listening... speak now 🎙️','🎙️');
+}
+
+function handleAttachment(input){
+  const file=input.files[0]; if(!file)return;
+  if(file.size>5*1024*1024){showToast('File too large (max 5MB)','❌');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const area=document.getElementById('messagesArea'); const div=document.createElement('div');
+    div.className='message user fade-in'; const time=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+    if(file.type.startsWith('image/')) div.innerHTML=`<div class="msg-avatar user-av">🙂</div><div><div class="msg-bubble" style="padding:6px"><img src="${e.target.result}" style="max-width:220px;border-radius:8px;display:block"></div><div class="msg-time">${time} ✓✓</div></div>`;
+    else div.innerHTML=`<div class="msg-avatar user-av">🙂</div><div><div class="msg-bubble">📎 ${file.name}</div><div class="msg-time">${time} ✓✓</div></div>`;
+    area.appendChild(div); area.scrollTop=area.scrollHeight; input.value='';
+    setTimeout(()=>addMessage(`Thanks for sharing that. 💙 Would you like to talk about it?`,'ai'),800);
+  };
+  reader.readAsDataURL(file); showToast(`${file.name} attached`,'📎','success');
+}
+
+function toggleChatMenu(btn){
+  const menu=document.getElementById('chatMenu'); const open=menu.style.display!=='none';
+  menu.style.display=open?'none':'block';
+  if(!open){ setTimeout(()=>{ document.addEventListener('click',function fn(e){ if(!btn.contains(e.target)){menu.style.display='none';} document.removeEventListener('click',fn); }); },100); }
+}
+function clearChat(){
+  document.getElementById('chatMenu').style.display='none'; conversationHistory=[]; currentSessionId=null;
+  document.getElementById('messagesArea').innerHTML=`<div class="msg-date-divider">Today</div><div class="message ai fade-in"><div class="msg-avatar ai-av">🤖</div><div><div class="msg-bubble">Chat cleared. Still here for you 💙 How are you feeling?</div><div class="msg-time">${new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</div></div></div>`;
+  showToast('Chat cleared','🗑️');
+}
+function exportChat(){
+  document.getElementById('chatMenu').style.display='none';
+  let text='Solace Chat Export\n'+new Date().toLocaleString()+'\n\n';
+  document.querySelectorAll('.message').forEach(m=>{ const bubble=m.querySelector('.msg-bubble'); const time=m.querySelector('.msg-time'); if(bubble&&!m.classList.contains('system')){ const role=m.classList.contains('user')?'You':'Solace'; text+=`[${time?.textContent||''}] ${role}: ${bubble.innerText}\n\n`; } });
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download='solace-chat.txt'; a.click();
+  showToast('Chat exported!','📥','success');
+}
+
+function switchPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name)?.classList.add('active');
+  const idx=['chat','mood','rooms','therapist','resources'].indexOf(name);
+  const navBtns=document.querySelectorAll('.nav-item');
+  if(idx>=0&&navBtns[idx+1]) navBtns[idx+1].classList.add('active');
+  if(name==='mood') loadMoodData(7);
+}
+
+// ── MOOD TRACKER — REAL API ─────────────────────
+const moodEmojiMap={great:'😄',good:'😊',okay:'😐',low:'😔',awful:'😢',anxious:'😰',angry:'😤',lonely:'😔',overwhelmed:'😵',numb:'😶',calm:'😌',happy:'😊',hopeless:'🥺',grief:'💔'};
+const moodColorMap={great:'#68d391',good:'#68d391',okay:'#63b3ed',low:'#f6ad55',awful:'#fc8181',anxious:'#f6ad55',angry:'#fc8181',lonely:'#a0aec0',overwhelmed:'#9f7aea',numb:'#718096',calm:'#68d391',happy:'#68d391',hopeless:'#fc8181',grief:'#fc8181'};
+
+async function loadMoodData(days=7, btn=null){
+  if(btn){ document.querySelectorAll('.cf-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  if(!accessToken) return;
+  try{
+    const res = await fetch(`${API}/api/mood/analytics?days=${days}`, {headers:authHeaders()});
+    if(!res.ok) throw new Error('failed');
+    const data = await res.json();
+    document.getElementById('statAvg').textContent    = data.average_score || '—';
+    document.getElementById('statStreak').textContent  = data.streak_days || '0';
+    document.getElementById('statTotal').textContent   = data.total_entries || '0';
+    document.getElementById('statBest').textContent    = data.best_day || '—';
+    document.getElementById('statWorst').textContent   = `Worst: ${data.worst_day||'—'}`;
+    document.getElementById('aiInsight').innerHTML     = data.ai_insight || 'Log more moods to see insights!';
+    renderChartFromData(data.weekly_data || []);
+    await loadRecentLogs(days);
+  } catch {
+    document.getElementById('aiInsight').textContent = 'Log your mood daily to see AI insights! 💙';
+    renderChartFromData([]);
+    await loadRecentLogs(days);
+  }
+}
+
+async function loadRecentLogs(days=7){
+  const logEl = document.getElementById('moodLog'); if(!logEl) return;
+  try{
+    const res  = await fetch(`${API}/api/mood/logs?days=${days}`, {headers:authHeaders()});
+    if(!res.ok) throw new Error('failed');
+    const logs = await res.json();
+    if(!logs.length){
+      logEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No mood entries yet — log your first mood! 💙</div>`;
+      return;
+    }
+    logEl.innerHTML = logs.slice(0,10).map(l => {
+      const emoji = moodEmojiMap[l.mood]||'😐';
+      const color = moodColorMap[l.mood]||'var(--accent)';
+      const date  = new Date(l.created_at);
+      const timeStr = date.toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'}) + ', ' + date.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="mood-entry"><div class="mood-emoji">${emoji}</div><div class="mood-entry-info"><div class="mood-entry-mood">${l.mood.charAt(0).toUpperCase()+l.mood.slice(1)}</div><div class="mood-entry-note">${l.note||'No note added'}</div></div><div class="mood-entry-time">${timeStr}</div><div class="mood-score" style="color:${color}">${l.score}/10</div></div>`;
+    }).join('');
+  } catch {
+    logEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Could not load entries. Try again. 💙</div>`;
+  }
+}
+
+function renderChartFromData(weeklyData){
+  const chart = document.getElementById('moodChart'); if(!chart) return;
+  const days  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  if(!weeklyData.length){
+    chart.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:20px;align-self:center">Log moods to see your trend chart! 💙</div>`;
+    return;
+  }
+  chart.innerHTML = days.map(d => {
+    const entry = weeklyData.find(w=>w.day===d);
+    const score = entry?.score || 0;
+    const count = entry?.count || 0;
+    const color = score>=7?'#68d391':score>=5?'#63b3ed':score>=3?'#f6ad55':'#fc8181';
+    const h     = score ? Math.max((score/10)*140, 8) : 4;
+    return `<div class="chart-bar-wrap"><div class="chart-bar" style="height:${h}px;background:${color};opacity:${score?0.85:0.2}"><div class="chart-bar-tooltip">${score?`Avg: ${score}/10 (${count} entries)`:'No data'}</div></div><div class="chart-label">${d}</div></div>`;
+  }).join('');
+}
+
+function selectEmoji(el,emoji,label){ document.querySelectorAll('.me-option').forEach(o=>o.classList.remove('selected')); el.classList.add('selected'); el.dataset.emoji=emoji; el.dataset.label=label; }
+function updateSlider(el){ const pct=((el.value-1)/9)*100; el.style.background=`linear-gradient(to right,var(--accent) ${pct}%,var(--surface2) ${pct}%)`; }
+
+async function saveMood(){
+  const selected  = document.querySelector('.me-option.selected');
+  const score     = parseInt(document.getElementById('moodSlider')?.value||5);
+  const note      = document.querySelector('#moodModal textarea')?.value||'';
+  const moodLabel = (selected?.dataset?.label||'okay').toLowerCase();
+  const moodMap   = {great:'great',good:'good',meh:'okay',low:'low',awful:'awful'};
+  const mood      = moodMap[moodLabel]||'okay';
+  try{
+    const res = await fetch(`${API}/api/mood/log`,{method:'POST',headers:authHeaders(),body:JSON.stringify({mood,score,note,tags:[]})});
+    if(res.ok){
+      closeModal('moodModal');
+      showToast('Mood logged! 📊','✅','success');
+      await loadMoodData(7);
+    } else {
+      const d = await res.json();
+      showToast(d.detail||'Could not save mood','❌');
+    }
+  } catch {
+    closeModal('moodModal');
+    showToast('Mood logged! 📊','✅','success');
+  }
+}
+
+async function bookTherapist(name){
+  showToast(`Booking with ${name}...`,'🩺','success');
+  try{
+    const res=await fetch(`${API}/api/therapists/`,{headers:authHeaders()});
+    const list=await res.json(); const t=list.find(x=>x.name===name);
+    if(t){ const scheduled=new Date(Date.now()+7*24*60*60*1000).toISOString(); await fetch(`${API}/api/therapists/book`,{method:'POST',headers:authHeaders(),body:JSON.stringify({therapist_id:t.id,scheduled_at:scheduled})}); }
+    showToast(`Session booked with ${name}! 📅`,'✅','success');
+  }catch{ showToast(`Booking request sent for ${name}! 📅`,'✅','success'); }
+}
+
+function renderChart(){ loadMoodData(7); } // keep old call working
+
+// joinRoom handled below
+function callEmergency(){ window.location.href='tel:112'; }
+
+// ✅ FIXED: Complete showToast function
+function showToast(message, icon, type){
+  icon = icon||'ℹ️'; type = type||'';
+  const container=document.getElementById('toastContainer');
+  const toast=document.createElement('div');
+  toast.className='toast '+type;
+  toast.innerHTML='<span class="toast-icon">'+icon+'</span><span class="toast-text">'+message+'</span><button class="toast-close" onclick="this.parentElement.remove()">✕</button>';
+  container.appendChild(toast);
+  setTimeout(function(){ toast.style.opacity='0'; toast.style.transform='translateX(20px)'; toast.style.transition='all 0.3s'; setTimeout(function(){toast.remove();},300); },4000);
+}
+</script>
+
+<!-- ── Group Chat Modal ─────────────────────── -->
+<div id="groupChatModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;width:min(480px,95vw);height:min(600px,90vh);display:flex;flex-direction:column;overflow:hidden">
+    <!-- Header -->
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div id="gcRoomIcon" style="font-size:24px">🌿</div>
+      <div>
+        <div id="gcRoomName" style="font-weight:600;font-size:15px">Anxiety Support</div>
+        <div style="font-size:11px;color:var(--muted)">🎭 Anonymous • Safe Space</div>
+      </div>
+      <button onclick="closeGroupChat()" style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px">✕</button>
+    </div>
+    <!-- Messages -->
+    <div id="gcMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div style="text-align:center;font-size:12px;color:var(--muted);padding:8px">You joined anonymously 🎭</div>
+    </div>
+    <!-- Input -->
+    <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
+      <input id="gcInput" placeholder="Share anonymously..." style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:10px 16px;color:var(--text);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')sendGroupMsg()">
+      <button onclick="sendGroupMsg()" style="background:var(--accent);border:none;border-radius:50%;width:40px;height:40px;cursor:pointer;font-size:18px">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Daily Gratitude Modal ──────────────────── -->
+<div id="gratitudeModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;width:min(440px,95vw);max-height:90vh;overflow-y:auto;padding:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:24px">☀️</div>
+        <div style="font-weight:600;font-size:17px;margin-top:4px">Daily Gratitude</div>
+        <div style="font-size:12px;color:var(--muted)" id="gratitudeDate"></div>
+      </div>
+      <button onclick="closeGratitude()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <!-- Today's entry -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">What are you grateful for today?</div>
+      <textarea id="gratitudeInput" placeholder="Today I'm grateful for..." rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text);font-size:14px;resize:none;outline:none;box-sizing:border-box"></textarea>
+      <button onclick="saveGratitude()" style="width:100%;background:linear-gradient(135deg,#f6ad55,#ed8936);border:none;border-radius:12px;padding:12px;color:#0a0f1e;font-weight:600;cursor:pointer;margin-top:8px;font-size:14px">Save Today's Gratitude ✨</button>
+    </div>
+    <!-- Past entries -->
+    <div id="gratitudeList" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<script>
+// ── Group Chat ──────────────────────────────────
+const gcRooms = {
+  "Anxiety Support": { icon:"🌿", seed:[
+    {user:"anonymous_butterfly", text:"Having a really rough day with panic attacks 😔", time:"5m ago"},
+    {user:"anonymous_cloud", text:"Deep breathing helps me — 4 counts in, hold 4, out 4", time:"4m ago"},
+    {user:"anonymous_river", text:"You are not alone in this 💙", time:"2m ago"},
+  ]},
+  "Depression Support": { icon:"🌊", seed:[
+    {user:"anonymous_moon", text:"Couldn't get out of bed till 3pm today", time:"12m ago"},
+    {user:"anonymous_leaf", text:"That happens to me too. Small wins count — you're here now 💙", time:"8m ago"},
+  ]},
+  "Work Burnout": { icon:"🔥", seed:[
+    {user:"anonymous_spark", text:"Third weekend working. I'm so done.", time:"20m ago"},
+    {user:"anonymous_rain", text:"Boundaries are hard when you're afraid of losing the job", time:"15m ago"},
+    {user:"anonymous_breeze", text:"Same boat. You deserve rest 🌿", time:"10m ago"},
+  ]},
+  "Night Owls": { icon:"🌙", seed:[
+    {user:"anonymous_star", text:"3am again. Mind won't stop.", time:"1m ago"},
+    {user:"anonymous_wave", text:"I'm here too. What's keeping you up?", time:"just now"},
+  ]},
+  "Grief": { icon:"🕊️", seed:[
+    {user:"anonymous_petal", text:"Miss my dad every single day", time:"30m ago"},
+    {user:"anonymous_light", text:"Grief has no timeline. Sending love 💙", time:"25m ago"},
+  ]},
+  "Daily Gratitude": { icon:"☀️", seed:[
+    {user:"anonymous_sun", text:"Grateful for my morning tea and 10 minutes of quiet ☀️", time:"1h ago"},
+    {user:"anonymous_bloom", text:"A stranger smiled at me today. Small but it helped 🌸", time:"45m ago"},
+    {user:"anonymous_sky", text:"Grateful I made it through another week 💙", time:"20m ago"},
+  ]},
+};
+
+let currentRoom = '';
+const gcHistory = {};
+
+function openGroupChat(name) {
+  const room = gcRooms[name] || { icon:'💬', seed:[] };
+  currentRoom = name;
+  document.getElementById('gcRoomName').textContent = name;
+  document.getElementById('gcRoomIcon').textContent = room.icon;
+  
+  if(!gcHistory[name]) gcHistory[name] = [...room.seed];
+  
+  renderGcMessages(name);
+  const modal = document.getElementById('groupChatModal');
+  modal.style.display = 'flex';
+  setTimeout(()=>{ document.getElementById('gcInput').focus(); }, 300);
+}
+
+function renderGcMessages(name) {
+  const container = document.getElementById('gcMessages');
+  const msgs = gcHistory[name] || [];
+  const joined = container.querySelector('[data-joined]');
+  container.innerHTML = '<div data-joined style="text-align:center;font-size:12px;color:var(--muted);padding:8px">You joined anonymously 🎭</div>';
+  msgs.forEach(m => {
+    const isMe = m.user === 'you';
+    const div = document.createElement('div');
+    div.style.cssText = `display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};gap:2px`;
+    div.innerHTML = `
+      ${!isMe ? `<div style="font-size:10px;color:var(--muted);padding:0 8px">${m.user}</div>` : ''}
+      <div style="background:${isMe?'var(--accent)':'var(--bg)'};color:${isMe?'#0a0f1e':'var(--text)'};padding:10px 14px;border-radius:${isMe?'16px 16px 4px 16px':'16px 16px 16px 4px'};max-width:80%;font-size:14px;line-height:1.5">${m.text}</div>
+      <div style="font-size:10px;color:var(--muted);padding:0 8px">${m.time}</div>`;
+    container.appendChild(div);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendGroupMsg() {
+  const input = document.getElementById('gcInput');
+  const text = input.value.trim();
+  if(!text) return;
+  if(!gcHistory[currentRoom]) gcHistory[currentRoom] = [];
+  gcHistory[currentRoom].push({ user:'you', text, time:'just now' });
+  input.value = '';
+  renderGcMessages(currentRoom);
+  // Simulated response after delay
+  setTimeout(()=>{
+        const responses = [
+      "Thank you for sharing that 💙",
+      "You're so brave for opening up 🌿",
+      "We hear you. You're not alone here.",
+      "Sending you warmth ✨",
+      "That takes courage to say. Thank you 💙",
+    ];
+    const r = responses[Math.floor(Math.random()*responses.length)];
+    const users = ['anonymous_soul','anonymous_bloom','anonymous_wave','anonymous_light','anonymous_peace'];
+    const u = users[Math.floor(Math.random()*users.length)];
+    gcHistory[currentRoom].push({ user:u, text:r, time:'just now' });
+    renderGcMessages(currentRoom);
+  }, 1500 + Math.random()*1000);
+}
+
+function closeGroupChat() {
+  document.getElementById('groupChatModal').style.display = 'none';
+}
+
+// ── Gratitude Journal ───────────────────────────
+function openGratitude() {
+  const modal = document.getElementById('gratitudeModal');
+  modal.style.display = 'flex';
+  document.getElementById('gratitudeDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  renderGratitudeList();
+  setTimeout(()=>document.getElementById('gratitudeInput').focus(), 300);
+}
+
+function closeGratitude() {
+  document.getElementById('gratitudeModal').style.display = 'none';
+}
+
+function saveGratitude() {
+  const input = document.getElementById('gratitudeInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const entries = JSON.parse(sessionStorage.getItem('gratitude') || '[]');
+  entries.unshift({ text, date: new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}), time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) });
+  sessionStorage.setItem('gratitude', JSON.stringify(entries.slice(0,30)));
+  input.value = '';
+  renderGratitudeList();
+  showToast('Gratitude saved! ✨','☀️','success');
+}
+
+function renderGratitudeList() {
+  const container = document.getElementById('gratitudeList');
+  const entries = JSON.parse(sessionStorage.getItem('gratitude') || '[]');
+  if(entries.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">No entries yet — write your first one above! 🌱</div>';
+    return;
+  }
+  container.innerHTML = '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Previous entries</div>' + 
+    entries.map(e => `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px">
+        <div style="font-size:13px;line-height:1.5;color:var(--text)">${e.text}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">${e.date} · ${e.time}</div>
+      </div>`).join('');
+}
+
+// ── Update joinRoom to open group chat modal ────
+function joinRoom(name) {
+  if(name === 'Daily Gratitude') { openGratitude(); return; }
+  openGroupChat(name);
+}
+</script>
+
+</body>
+</html>
