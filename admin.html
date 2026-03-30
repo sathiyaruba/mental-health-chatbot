@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solace Admin — Control Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#060910;--surface:#0d1117;--surface2:#131a24;--surface3:#1a2332;
+  --border:#1e2d40;--border2:#243347;--text:#e6edf3;--muted:#7d8590;--soft:#b1bac4;
+  --accent:#58a6ff;--accent2:#bc8cff;--green:#3fb950;--yellow:#e3b341;
+  --red:#f85149;--orange:#d29922;--teal:#39d353;--pink:#ff7eb6;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;position:fixed;left:0;top:0;z-index:100;}
+.sidebar-logo{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
+.logo-badge{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-name{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.5px;}
+.logo-sub{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;padding-left:42px;}
+.nav-section{padding:16px 12px 8px;flex:1;overflow-y:auto;}
+.nav-label{font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:6px;margin-top:12px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;color:var(--soft);transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(88,166,255,0.1);color:var(--accent);border:1px solid rgba(88,166,255,0.2);}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;font-family:'Space Mono',monospace;}
+.nav-badge.green{background:rgba(63,185,80,0.2);color:var(--green);}
+.sidebar-footer{padding:12px;border-top:1px solid var(--border);}
+.admin-profile{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--surface2);}
+.admin-avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent2),var(--pink));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;font-family:'Syne',sans-serif;}
+.admin-name{font-size:12px;font-weight:600;}.admin-role{font-size:10px;color:var(--muted);}
+.main{margin-left:220px;flex:1;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;flex-shrink:0;}
+.topbar-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.topbar-search{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;}
+.topbar-search input{background:none;border:none;outline:none;color:var(--text);font-size:13px;width:200px;font-family:'DM Sans',sans-serif;}
+.topbar-search input::placeholder{color:var(--muted);}
+.topbar-btn{width:34px;height:34px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all 0.15s;position:relative;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1px solid var(--surface);}
+.crisis-alert-bar{background:rgba(248,81,73,0.1);border-bottom:1px solid rgba(248,81,73,0.3);padding:8px 24px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--red);animation:pulse-bar 2s infinite;}
+@keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:0.7}}
+.content{padding:24px;flex:1;}
+.panel{display:none;}.panel.active{display:block;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent);}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--accent2),transparent);}
+.stat-card.green::before{background:linear-gradient(90deg,var(--green),transparent);}
+.stat-card.red::before{background:linear-gradient(90deg,var(--red),transparent);}
+.stat-card.yellow::before{background:linear-gradient(90deg,var(--yellow),transparent);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:'Space Mono',monospace;margin-bottom:8px;}
+.stat-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:4px;}
+.stat-value.blue{color:var(--accent);}.stat-value.green{color:var(--green);}.stat-value.red{color:var(--red);}.stat-value.purple{color:var(--accent2);}.stat-value.yellow{color:var(--yellow);}
+.stat-change{font-size:11px;}.stat-change.up{color:var(--green);}.stat-change.down{color:var(--red);}
+.stat-icon{position:absolute;right:16px;top:16px;font-size:24px;opacity:0.15;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+.card-subtitle{font-size:11px;color:var(--muted);}
+.card-actions{margin-left:auto;display:flex;gap:8px;}
+.card-body{padding:20px;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{border-bottom:1px solid var(--border);}
+thead th{padding:10px 16px;text-align:left;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;font-weight:400;}
+tbody tr{border-bottom:1px solid rgba(30,45,64,0.5);transition:background 0.1s;}
+tbody tr:hover{background:var(--surface2);}
+tbody td{padding:12px 16px;font-size:13px;}
+.td-id{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;font-family:'Space Mono',monospace;}
+.badge-green{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.2);}
+.badge-red{background:rgba(248,81,73,0.1);color:var(--red);border:1px solid rgba(248,81,73,0.2);}
+.badge-yellow{background:rgba(227,179,65,0.1);color:var(--yellow);border:1px solid rgba(227,179,65,0.2);}
+.badge-blue{background:rgba(88,166,255,0.1);color:var(--accent);border:1px solid rgba(88,166,255,0.2);}
+.badge-purple{background:rgba(188,140,255,0.1);color:var(--accent2);border:1px solid rgba(188,140,255,0.2);}
+.badge-muted{background:rgba(125,133,144,0.1);color:var(--muted);border:1px solid rgba(125,133,144,0.2);}
+.avatar{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0d1117;font-family:'Syne',sans-serif;flex-shrink:0;}
+.btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid transparent;font-family:'DM Sans',sans-serif;transition:all 0.15s;}
+.btn-primary{background:var(--accent);color:#0d1117;font-weight:600;}.btn-primary:hover{background:#79b8ff;}
+.btn-ghost{background:none;border-color:var(--border);color:var(--soft);}.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-danger{background:rgba(248,81,73,0.1);border-color:rgba(248,81,73,0.3);color:var(--red);}.btn-danger:hover{background:rgba(248,81,73,0.2);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.mood-bar-wrap{display:flex;align-items:center;gap:8px;}
+.mood-bar-track{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.mood-bar-fill{height:100%;border-radius:3px;}
+.mood-val{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);width:28px;}
+.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(30,45,64,0.5);}
+.activity-item:last-child{border:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.activity-content{flex:1;}
+.activity-text{font-size:12px;line-height:1.5;}
+.activity-time{font-size:10px;color:var(--muted);margin-top:2px;font-family:'Space Mono',monospace;}
+.crisis-card{background:rgba(248,81,73,0.05);border:1px solid rgba(248,81,73,0.2);border-radius:12px;padding:16px;margin-bottom:12px;}
+.crisis-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.crisis-pulse{width:10px;height:10px;border-radius:50%;background:var(--red);animation:crisis-pulse 1.5s infinite;flex-shrink:0;}
+@keyframes crisis-pulse{0%,100%{box-shadow:0 0 0 0 rgba(248,81,73,0.4);}50%{box-shadow:0 0 0 6px rgba(248,81,73,0);}}
+.crisis-user{font-weight:600;font-size:13px;}.crisis-time{font-size:10px;color:var(--red);font-family:'Space Mono',monospace;margin-left:auto;}
+.crisis-msg{font-size:12px;color:var(--soft);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:rgba(248,81,73,0.05);border-radius:6px;border-left:2px solid var(--red);}
+.crisis-actions{display:flex;gap:8px;}
+.mood-dist{display:flex;flex-direction:column;gap:8px;}
+.mood-dist-item{display:flex;align-items:center;gap:10px;}
+.mood-dist-label{font-size:12px;width:60px;color:var(--soft);}
+.mood-dist-bar{flex:1;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;}
+.mood-dist-fill{height:100%;border-radius:4px;}
+.mood-dist-count{font-size:11px;color:var(--muted);width:40px;text-align:right;font-family:'Space Mono',monospace;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:480px;max-height:80vh;overflow-y:auto;padding:24px;position:relative;animation:modalIn 0.2s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95)translateY(-10px)}to{opacity:1;transform:scale(1)translateY(0)}}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);width:28px;height:28px;border-radius:7px;cursor:pointer;color:var(--muted);font-size:14px;display:flex;align-items:center;justify-content:center;}
+.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;}
+.form-input{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;}
+.form-input:focus{border-color:var(--accent);}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.filter-input{padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:'DM Sans',sans-serif;}
+.filter-select{padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;outline:none;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;min-width:280px;font-size:13px;animation:toastIn 0.3s ease;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.chart-container{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:12px;}
+.chart-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
+.chart-bar-fill{width:100%;border-radius:4px 4px 0 0;background:rgba(88,166,255,0.3);transition:all 0.4s ease;cursor:pointer;}
+.chart-bar-fill:hover{background:var(--accent);}
+.chart-bar-fill.red-bar{background:rgba(248,81,73,0.3);}.chart-bar-fill.red-bar:hover{background:var(--red);}
+.chart-bar-fill.green-bar{background:rgba(63,185,80,0.3);}.chart-bar-fill.green-bar:hover{background:var(--green);}
+.chart-x-label{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;}
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+.refresh-btn{cursor:pointer;font-size:14px;color:var(--muted);padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:none;transition:all 0.15s;}
+.refresh-btn:hover{background:var(--surface2);color:var(--text);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp 0.3s ease forwards;}
+@media(max-width:1200px){.stats-row{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-badge">
+      <div class="logo-icon">🌙</div>
+      <div class="logo-name">Solace</div>
+    </div>
+    <div class="logo-sub">Admin Console</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Main</div>
+    <button class="nav-item active" onclick="switchPanel('dashboard',this)"><span class="nav-icon">📊</span> Dashboard</button>
+    <button class="nav-item" onclick="switchPanel('users',this)"><span class="nav-icon">👥</span> Users <span class="nav-badge green" id="navUserCount">—</span></button>
+    <button class="nav-item" onclick="switchPanel('crisis',this)"><span class="nav-icon">🚨</span> Crisis Alerts <span class="nav-badge" id="navCrisisCount">—</span></button>
+    <button class="nav-item" onclick="switchPanel('chats',this)"><span class="nav-icon">💬</span> Chat Sessions</button>
+    <button class="nav-item" onclick="switchPanel('mood',this)"><span class="nav-icon">📈</span> Mood Analytics</button>
+    <div class="nav-label">Platform</div>
+    <button class="nav-item" onclick="switchPanel('therapists',this)"><span class="nav-icon">🩺</span> Therapists</button>
+    <button class="nav-item" onclick="switchPanel('bookings',this)"><span class="nav-icon">📅</span> Bookings</button>
+    <div class="nav-label">System</div>
+    <button class="nav-item" onclick="switchPanel('settings',this)"><span class="nav-icon">⚙️</span> Settings</button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="admin-profile">
+      <div class="admin-avatar">A</div>
+      <div class="admin-info"><div class="admin-name">Admin</div><div class="admin-role">Super Admin</div></div>
+      <button class="refresh-btn" onclick="refreshAll()" title="Refresh all data">🔄</button>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace" id="lastRefresh">—</div>
+    <div class="topbar-right">
+      <div class="topbar-search">
+        <span style="color:var(--muted);font-size:13px">🔍</span>
+        <input type="text" placeholder="Search users..." id="globalSearch" oninput="if(currentPanel==='users')filterUsers(this.value)">
+      </div>
+      <div class="topbar-btn" onclick="switchPanel('crisis',document.querySelectorAll('.nav-item')[2])">🔔<div class="notif-dot" id="crisisDot" style="display:none"></div></div>
+      <div class="topbar-btn" onclick="refreshAll()">🔄</div>
+    </div>
+  </div>
+
+  <div class="crisis-alert-bar" id="crisisBar" style="display:none">
+    <span>🚨</span>
+    <strong id="crisisBarText">Active crisis sessions</strong> — Users requiring immediate attention.
+    <a href="#" onclick="switchPanel('crisis',document.querySelectorAll('.nav-item')[2]);return false;" style="color:var(--red);text-decoration:underline;margin-left:4px">View now →</a>
+    <button style="margin-left:auto;cursor:pointer;background:none;border:none;color:var(--red);font-size:16px" onclick="document.getElementById('crisisBar').style.display='none'">✕</button>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-row" id="dashStats"><div class="loading">Loading stats...</div></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">📈 Daily Active Users</div><div class="card-subtitle">Last 15 days</div></div></div>
+          <div class="card-body"><div class="chart-container" id="userChart"><div class="loading">Loading...</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">🚨 Crisis Alerts Trend</div><div class="card-subtitle">Last 15 days</div></div></div>
+          <div class="card-body"><div class="chart-container" id="crisisChart"><div class="loading">Loading...</div></div></div>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">🆘 Active Crisis Sessions</div><div class="card-subtitle">Requires immediate attention</div></div><button class="btn btn-danger btn-sm" onclick="switchPanel('crisis',null)">View All</button></div>
+          <div class="card-body" id="dashCrisisBody"><div class="loading">Loading...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">😊 Mood Distribution</div></div>
+          <div class="card-body" id="dashMoodDist"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">⚡ Recent Activity</div><div class="card-subtitle" id="activitySub">Live platform events</div></div>
+        <div class="card-body" id="activityBody"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="panel" id="panel-users">
+      <div class="filter-bar">
+        <input class="filter-input" placeholder="🔍 Search users..." style="width:250px" oninput="filterUsers(this.value)" id="userSearch">
+        <select class="filter-select" onchange="filterUsers(document.getElementById('userSearch').value)">
+          <option>All Users</option><option>Anonymous</option><option>Named</option>
+        </select>
+        <div style="margin-left:auto;font-size:12px;color:var(--muted)" id="userCountLabel">—</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">👥 All Users</div><div class="card-subtitle" id="usersSubtitle">Loading...</div></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Email</th><th>Type</th><th>Joined</th><th>Last Login</th><th>Mood Avg</th><th>Sessions</th><th>Status</th><th>Actions</th></tr></thead><tbody id="usersBody"><tr><td colspan="9" class="loading">Loading users...</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- CRISIS -->
+    <div class="panel" id="panel-crisis">
+      <div class="stats-row" style="grid-template-columns:repeat(4,1fr)" id="crisisStats"></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div><div class="card-title">🚨 Active Crisis Sessions</div><div class="card-subtitle">Requires immediate response</div></div><button class="refresh-btn" onclick="loadCrisis()">🔄 Refresh</button></div>
+        <div class="card-body" id="activeCrisisBody"><div class="loading">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📋 Crisis Alert History</div></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Trigger Message</th><th>Contact</th><th>Status</th><th>Time</th><th>Action</th></tr></thead><tbody id="crisisHistoryBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- CHATS -->
+    <div class="panel" id="panel-chats">
+      <div class="card">
+        <div class="card-header"><div class="card-title">💬 All Chat Sessions</div><div class="card-subtitle" id="chatsSubtitle">Loading...</div><button class="refresh-btn" style="margin-left:auto" onclick="loadChats()">🔄</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Session ID</th><th>User</th><th>Title</th><th>Messages</th><th>Crisis</th><th>Started</th><th>Last Active</th></tr></thead><tbody id="chatsBody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- MOOD -->
+    <div class="panel" id="panel-mood">
+      <div class="stats-row" id="moodStats"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Mood Score Trend</div><div class="card-subtitle">Daily platform average</div></div>
+          <div class="card-body"><div class="chart-container" id="moodChart"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">🏷️ Top Mood Tags</div></div>
+          <div class="card-body" id="moodTagsBody"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📋 Recent Mood Logs</div><button class="refresh-btn" style="margin-left:auto" onclick="loadMood()">🔄</button></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Mood</th><th>Score</th><th>Note</th><th>Tags</th><th>Time</th></tr></thead><tbody id="moodLogsBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- THERAPISTS -->
+    <div class="panel" id="panel-therapists">
+      <div class="filter-bar">
+        <input class="filter-input" placeholder="🔍 Search therapists..." style="width:250px">
+        <button class="btn btn-primary" style="margin-left:auto" onclick="openModal('addTherapistModal')">+ Add Therapist</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🩺 All Therapists</div><button class="refresh-btn" style="margin-left:auto" onclick="loadTherapists()">🔄</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Therapist</th><th>Specialization</th><th>Approaches</th><th>Languages</th><th>Rating</th><th>Bookings</th><th>Availability</th><th>Actions</th></tr></thead><tbody id="therapistsBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <div class="panel" id="panel-bookings">
+      <div class="stats-row" style="grid-template-columns:repeat(4,1fr)" id="bookingStats"></div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📅 All Bookings</div><button class="refresh-btn" style="margin-left:auto" onclick="loadBookings()">🔄</button></div>
+        <div class="table-wrap"><table><thead><tr><th>User</th><th>Therapist</th><th>Scheduled</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="bookingsBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="card" style="max-width:500px">
+        <div class="card-header"><div class="card-title">🔑 Admin Access</div></div>
+        <div class="card-body">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Space Mono',monospace;font-size:12px;margin-bottom:16px">
+            <div style="color:var(--muted);margin-bottom:4px">ADMIN TOKEN</div>
+            <div style="color:var(--accent)" id="showToken">solace-admin-2024</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">Use this token in the URL: <code style="color:var(--accent)">?token=solace-admin-2024</code></div>
+          <div style="margin-top:16px;font-size:12px;color:var(--muted)">API Base: <code style="color:var(--accent)" id="apiBaseShow">—</code></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Auto-refresh every <strong style="color:var(--text)">30 seconds</strong></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal" style="width:520px">
+    <button class="modal-close" onclick="closeModal('userModal')">✕</button>
+    <div id="userModalContent"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addTherapistModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addTherapistModal')">✕</button>
+    <div class="modal-title">Add New Therapist</div>
+    <div class="modal-sub">Onboard a licensed mental health professional</div>
+    <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="tName" placeholder="Dr. First Last"></div>
+    <div class="form-group"><label class="form-label">Specialization</label><input class="form-input" id="tSpec" placeholder="e.g. Anxiety & Trauma"></div>
+    <div class="form-group"><label class="form-label">Approaches</label><input class="form-input" id="tApproach" placeholder="CBT, DBT, EMDR"></div>
+    <div class="form-group"><label class="form-label">Languages</label><input class="form-input" id="tLangs" placeholder="English, Tamil"></div>
+    <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="tBio" rows="3" placeholder="Brief professional bio..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addTherapistModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addTherapist()">Add Therapist</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const API = ''; // Served from same backend - use relative URLs
+const TOKEN = 'solace-admin-2024';
+const Q = (path) => `${API}${path}?token=${TOKEN}`;
+let currentPanel = 'dashboard';
+let allUsers = [];
+
+document.getElementById('apiBaseShow').textContent = window.location.origin;
+
+// ── FETCH HELPER ────────────────────────────────
+async function apiFetch(path) {
+  const res = await fetch(Q(path));
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+// ── DASHBOARD ───────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [stats, charts, crisis, activity, mood] = await Promise.all([
+      apiFetch('/api/admin/stats'),
+      apiFetch('/api/admin/charts'),
+      apiFetch('/api/admin/crisis'),
+      apiFetch('/api/admin/activity'),
+      apiFetch('/api/admin/mood'),
+    ]);
+
+    // Update nav badges
+    document.getElementById('navUserCount').textContent = stats.total_users;
+    document.getElementById('navCrisisCount').textContent = stats.crisis_active;
+    if (stats.crisis_active > 0) {
+      document.getElementById('crisisDot').style.display = 'block';
+      document.getElementById('crisisBar').style.display = 'flex';
+      document.getElementById('crisisBarText').textContent = `${stats.crisis_active} active crisis session${stats.crisis_active > 1 ? 's' : ''}`;
+    }
+
+    // Stats cards
+    document.getElementById('dashStats').innerHTML = `
+      <div class="stat-card blue fade-up">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value blue">${stats.total_users}</div>
+        <div class="stat-change up">↑ ${stats.new_today} new today</div>
+      </div>
+      <div class="stat-card green fade-up">
+        <div class="stat-icon">💬</div>
+        <div class="stat-label">Sessions Today</div>
+        <div class="stat-value green">${stats.active_sessions}</div>
+        <div class="stat-change up">${stats.total_messages} messages</div>
+      </div>
+      <div class="stat-card red fade-up">
+        <div class="stat-icon">🚨</div>
+        <div class="stat-label">Crisis Alerts Today</div>
+        <div class="stat-value red">${stats.crisis_today}</div>
+        <div class="stat-change down">${stats.crisis_active} unresolved</div>
+      </div>
+      <div class="stat-card purple fade-up">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Avg Mood Score</div>
+        <div class="stat-value purple">${stats.avg_mood}</div>
+        <div class="stat-change" style="color:var(--muted)">/ 10 platform average</div>
+      </div>
+      <div class="stat-card yellow fade-up">
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">Bookings Today</div>
+        <div class="stat-value yellow">${stats.bookings_today}</div>
+        <div class="stat-change" style="color:var(--muted)">therapist sessions</div>
+      </div>
+      <div class="stat-card green fade-up">
+        <div class="stat-icon">🎭</div>
+        <div class="stat-label">Anonymous Users</div>
+        <div class="stat-value green">${stats.anon_pct}%</div>
+        <div class="stat-change" style="color:var(--muted)">${stats.anon_users} of ${stats.total_users}</div>
+      </div>
+      <div class="stat-card blue fade-up">
+        <div class="stat-icon">📋</div>
+        <div class="stat-label">Total Mood Logs</div>
+        <div class="stat-value blue">${stats.total_mood_logs}</div>
+        <div class="stat-change" style="color:var(--muted)">all time</div>
+      </div>
+      <div class="stat-card purple fade-up">
+        <div class="stat-icon">🤖</div>
+        <div class="stat-label">Messages Today</div>
+        <div class="stat-value purple">${stats.total_messages}</div>
+        <div class="stat-change" style="color:var(--muted)">AI conversations</div>
+      </div>`;
+
+    // Charts
+    renderBarChart('userChart', charts.users, charts.labels, '');
+    renderBarChart('crisisChart', charts.crisis, charts.labels, 'red-bar');
+    renderBarChart('moodChart', charts.mood, charts.labels, 'green-bar');
+
+    // Active crisis in dashboard
+    if (crisis.active.length === 0) {
+      document.getElementById('dashCrisisBody').innerHTML = '<div style="text-align:center;padding:20px;color:var(--green);font-size:13px">✅ No active crisis sessions</div>';
+    } else {
+      document.getElementById('dashCrisisBody').innerHTML = crisis.active.slice(0, 3).map(c => `
+        <div class="crisis-card">
+          <div class="crisis-card-header">
+            <div class="crisis-pulse"></div>
+            <div class="crisis-user">${c.user_name}</div>
+            <div class="crisis-time">${fmtTime(c.created_at)}</div>
+          </div>
+          <div class="crisis-msg">"${(c.trigger_text || 'Crisis detected').slice(0, 100)}..."</div>
+          <div class="crisis-actions">
+            <button class="btn btn-danger btn-sm" onclick="showToast('Crisis team notified','🚨','red')">Alert Team</button>
+            <button class="btn btn-ghost btn-sm" onclick="resolveAlert('${c.id}')">✅ Resolve</button>
+          </div>
+        </div>`).join('');
+    }
+
+    // Mood distribution
+    const moodColors = {great:'var(--green)',good:'var(--accent)',okay:'var(--muted)',low:'var(--yellow)',awful:'var(--red)'};
+    const total = Object.values(mood.mood_dist).reduce((a,b) => a+b, 0) || 1;
+    document.getElementById('dashMoodDist').innerHTML = `
+      <div class="mood-dist">
+        ${Object.entries(mood.mood_dist).map(([m, c]) => `
+          <div class="mood-dist-item">
+            <div class="mood-dist-label" style="color:${moodColors[m]||'var(--soft)'}">${m}</div>
+            <div class="mood-dist-bar"><div class="mood-dist-fill" style="width:${Math.round(c/total*100)}%;background:${moodColors[m]||'var(--soft)'}"></div></div>
+            <div class="mood-dist-count">${c}</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace">PLATFORM HEALTH SCORE</div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:${mood.avg_score >= 6 ? 'var(--green)' : mood.avg_score >= 4 ? 'var(--yellow)' : 'var(--red)'};margin-top:4px">${mood.avg_score} <span style="font-size:13px;color:var(--muted);font-family:'DM Sans',sans-serif">/ 10</span></div>
+      </div>`;
+
+    // Activity feed
+    document.getElementById('activityBody').innerHTML = activity.events.slice(0, 8).map(e => `
+      <div class="activity-item">
+        <div class="activity-dot" style="background:${e.color === 'red' ? 'var(--red)' : e.color === 'green' ? 'var(--green)' : 'var(--accent)'}"></div>
+        <div class="activity-content">
+          <div class="activity-text">${e.text}</div>
+          <div class="activity-time">${fmtTime(e.time)}</div>
+        </div>
+      </div>`).join('') || '<div class="loading">No recent activity</div>';
+
+    updateRefreshTime();
+  } catch(e) {
+    console.error('Dashboard error:', e);
+    document.getElementById('dashStats').innerHTML = `<div style="grid-column:1/-1;padding:20px;color:var(--red);font-size:13px">❌ Cannot connect to backend — is it running at ${API}?</div>`;
+  }
+}
+
+// ── USERS ───────────────────────────────────────
+async function loadUsers(search = '') {
+  try {
+    const data = await apiFetch(`/api/admin/users${search ? '&search=' + encodeURIComponent(search) : ''}`);
+    allUsers = data.users;
+    document.getElementById('usersSubtitle').textContent = `${data.total} registered users`;
+    document.getElementById('userCountLabel').textContent = `${data.total} users`;
+    renderUsersTable(data.users);
+  } catch(e) {
+    document.getElementById('usersBody').innerHTML = `<tr><td colspan="9" style="color:var(--red);padding:20px">Error loading users: ${e.message}</td></tr>`;
+  }
+}
+
+function filterUsers(q = '') {
+  const filtered = allUsers.filter(u =>
+    u.display_name.toLowerCase().includes(q.toLowerCase()) ||
+    u.email.toLowerCase().includes(q.toLowerCase())
+  );
+  renderUsersTable(filtered);
+}
+
+function renderUsersTable(users) {
+  const colors = ['#58a6ff','#bc8cff','#3fb950','#e3b341','#f85149','#ff7eb6','#39d353','#d29922'];
+  document.getElementById('usersBody').innerHTML = users.length === 0
+    ? '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">No users found</td></tr>'
+    : users.map((u, i) => {
+        const color = colors[i % colors.length];
+        const initials = u.display_name.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase();
+        const moodColor = u.mood_avg >= 7 ? 'var(--green)' : u.mood_avg >= 5 ? 'var(--yellow)' : u.mood_avg ? 'var(--red)' : 'var(--muted)';
+        return `<tr>
+          <td><div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar" style="background:${color}">${initials}</div>
+            <div><div style="font-weight:500">${u.display_name}</div><div class="td-id">${u.id.slice(0,8)}...</div></div>
+          </div></td>
+          <td style="color:var(--soft);font-size:12px">${u.email}</td>
+          <td>${u.is_anonymous ? '<span class="badge badge-purple">🎭 Anon</span>' : '<span class="badge badge-blue">👤 Named</span>'}
+              ${u.oauth_provider ? `<span class="badge badge-muted" style="margin-left:4px">${u.oauth_provider}</span>` : ''}</td>
+          <td class="td-id">${fmtDate(u.created_at)}</td>
+          <td class="td-id">${u.last_login ? fmtDate(u.last_login) : '—'}</td>
+          <td>${u.mood_avg != null ? `<div class="mood-bar-wrap"><div class="mood-bar-track"><div class="mood-bar-fill" style="width:${u.mood_avg*10}%;background:${moodColor}"></div></div><div class="mood-val" style="color:${moodColor}">${u.mood_avg}</div></div>` : '<span style="color:var(--muted)">—</span>'}</td>
+          <td><span class="badge badge-muted">${u.session_count}</span></td>
+          <td>${u.is_active ? '<span class="badge badge-green">● Active</span>' : '<span class="badge badge-muted">Inactive</span>'}
+              ${u.has_crisis ? '<span class="badge badge-red" style="margin-left:4px">⚠ Crisis</span>' : ''}</td>
+          <td><div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="openUserModal('${u.id}')">View</button>
+            <button class="btn btn-danger btn-sm" onclick="deactivateUser('${u.id}','${u.display_name}')">Block</button>
+          </div></td>
+        </tr>`;
+      }).join('');
+}
+
+async function deactivateUser(id, name) {
+  if (!confirm(`Deactivate ${name}?`)) return;
+  try {
+    await fetch(Q(`/api/admin/users/${id}/deactivate`), { method: 'PATCH' });
+    showToast(`${name} deactivated`, '🚫', 'red');
+    loadUsers();
+  } catch(e) { showToast('Error deactivating user', '❌', 'red'); }
+}
+
+async function openUserModal(uid) {
+  try {
+    const u = await apiFetch(`/api/admin/users/${uid}`);
+    const color = '#58a6ff';
+    const initials = u.display_name.split(' ').map(x => x[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('userModalContent').innerHTML = `
+      <div style="display:flex;align-items:center;gap:16px;padding:20px;background:var(--surface2);border-radius:12px;margin-bottom:16px">
+        <div style="width:56px;height:56px;border-radius:14px;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#0d1117;font-family:'Syne',sans-serif">${initials}</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700">${u.display_name}</div>
+          <div style="font-size:12px;color:var(--muted)">${u.email}</div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            ${u.is_anonymous ? '<span class="badge badge-purple">🎭 Anonymous</span>' : '<span class="badge badge-blue">👤 Named</span>'}
+            ${u.is_active ? '<span class="badge badge-green">● Active</span>' : '<span class="badge badge-muted">Inactive</span>'}
+            ${u.is_verified ? '<span class="badge badge-green">✓ Verified</span>' : '<span class="badge badge-yellow">Unverified</span>'}
+          </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:20px">
+          <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent)">${u.sessions.length}</div><div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace">SESSIONS</div></div>
+          <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--accent)">${u.mood_logs.length}</div><div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace">MOOD LOGS</div></div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:8px">RECENT MOOD LOGS</div>
+        ${u.mood_logs.length === 0 ? '<div style="color:var(--muted);font-size:12px">No mood logs yet</div>' :
+          u.mood_logs.slice(0,5).map(m => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(30,45,64,0.3)">
+            <span style="font-size:12px;color:${m.score<=2?'var(--red)':m.score<=5?'var(--yellow)':'var(--green)'}">●</span>
+            <span style="font-size:12px;font-weight:500">${m.mood}</span>
+            <span style="font-size:11px;color:var(--muted)">${m.score}/10</span>
+            <span style="font-size:11px;color:var(--soft);flex:1">${m.note || '—'}</span>
+            <span class="td-id">${fmtDate(m.created_at)}</span>
+          </div>`).join('')}
+      </div>
+      ${u.crisis_alerts.length > 0 ? `<div style="background:rgba(248,81,73,0.05);border:1px solid rgba(248,81,73,0.2);border-radius:8px;padding:12px;margin-bottom:12px">
+        <div style="font-size:11px;color:var(--red);font-family:'Space Mono',monospace;margin-bottom:6px">⚠ CRISIS HISTORY (${u.crisis_alerts.length})</div>
+        ${u.crisis_alerts.slice(0,3).map(a => `<div style="font-size:12px;color:var(--soft);padding:4px 0">"${(a.trigger_text||'Crisis detected').slice(0,80)}"</div>`).join('')}
+      </div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-danger" onclick="deactivateUser('${u.id}','${u.display_name}');closeModal('userModal')">Deactivate</button>
+        <button class="btn btn-ghost" onclick="closeModal('userModal')">Close</button>
+      </div>`;
+    openModal('userModal');
+  } catch(e) { showToast('Error loading user', '❌', 'red'); }
+}
+
+// ── CRISIS ──────────────────────────────────────
+async function loadCrisis() {
+  try {
+    const data = await apiFetch('/api/admin/crisis');
+
+    document.getElementById('crisisStats').innerHTML = `
+      <div class="stat-card red"><div class="stat-label">Active Crises</div><div class="stat-value red">${data.active.length}</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Total History</div><div class="stat-value yellow">${data.history.length}</div></div>
+      <div class="stat-card green"><div class="stat-label">Resolved</div><div class="stat-value green">${data.history.filter(a=>a.status==='sent').length}</div></div>
+      <div class="stat-card blue"><div class="stat-label">Pending</div><div class="stat-value blue">${data.history.filter(a=>a.status==='pending').length}</div></div>`;
+
+    document.getElementById('activeCrisisBody').innerHTML = data.active.length === 0
+      ? '<div style="text-align:center;padding:30px;color:var(--green)">✅ No active crisis sessions right now</div>'
+      : data.active.map(c => `
+          <div class="crisis-card">
+            <div class="crisis-card-header">
+              <div class="crisis-pulse"></div>
+              <div class="crisis-user">${c.user_name}</div>
+              <div class="crisis-time">${fmtTime(c.created_at)} · ${c.contact_name ? c.contact_name + ' notified' : 'No contact notified'}</div>
+            </div>
+            <div class="crisis-msg">"${(c.trigger_text || 'Crisis signal detected').slice(0,150)}"</div>
+            <div class="crisis-actions">
+              <button class="btn btn-danger btn-sm" onclick="showToast('Crisis team alerted','🚨','red')">🚨 Alert Team</button>
+              <button class="btn btn-ghost btn-sm" onclick="openUserModal('${c.user_id}')">👤 Profile</button>
+              <button class="btn btn-ghost btn-sm" onclick="resolveAlert('${c.id}')">✅ Resolve</button>
+            </div>
+          </div>`).join('');
+
+    document.getElementById('crisisHistoryBody').innerHTML = data.history.map(h => `<tr>
+      <td><span class="badge badge-red">⚠ ${h.user_name}</span></td>
+      <td style="font-size:12px;color:var(--soft);max-width:220px">"${(h.trigger_text||'—').slice(0,60)}${(h.trigger_text||'').length>60?'...':''}"</td>
+      <td>${h.contact_name ? `<span class="badge badge-blue">${h.contact_name}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${h.status==='sent'?'<span class="badge badge-green">✓ Sent</span>':h.status==='pending'?'<span class="badge badge-yellow">⏳ Pending</span>':'<span class="badge badge-red">✗ Failed</span>'}</td>
+      <td class="td-id">${fmtTime(h.created_at)}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="resolveAlert('${h.id}')">Resolve</button></td>
+    </tr>`).join('');
+  } catch(e) {
+    document.getElementById('activeCrisisBody').innerHTML = `<div style="color:var(--red);padding:20px">Error: ${e.message}</div>`;
+  }
+}
+
+async function resolveAlert(id) {
+  try {
+    await fetch(Q(`/api/admin/crisis/${id}/resolve`), { method: 'PATCH' });
+    showToast('Crisis marked as resolved ✅', '✅');
+    loadCrisis();
+  } catch(e) { showToast('Error resolving alert', '❌', 'red'); }
+}
+
+// ── CHATS ───────────────────────────────────────
+async function loadChats() {
+  try {
+    const data = await apiFetch('/api/admin/chats');
+    document.getElementById('chatsSubtitle').textContent = `${data.sessions.length} sessions`;
+    document.getElementById('chatsBody').innerHTML = data.sessions.length === 0
+      ? '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No chat sessions yet</td></tr>'
+      : data.sessions.map(s => `<tr>
+          <td class="td-id">${s.id.slice(0,8)}...</td>
+          <td><span class="badge badge-blue">${s.user_name}</span></td>
+          <td style="font-size:12px;color:var(--soft)">${s.title}</td>
+          <td><span class="badge badge-muted">${s.msg_count} msgs</span></td>
+          <td>${s.crisis_flag ? '<span class="badge badge-red">⚠ Crisis</span>' : '<span class="badge badge-green">✓ Safe</span>'}</td>
+          <td class="td-id">${fmtTime(s.created_at)}</td>
+          <td class="td-id">${fmtTime(s.updated_at)}</td>
+        </tr>`).join('');
+  } catch(e) {
+    document.getElementById('chatsBody').innerHTML = `<tr><td colspan="7" style="color:var(--red);padding:20px">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// ── MOOD ────────────────────────────────────────
+async function loadMood() {
+  try {
+    const [data, charts] = await Promise.all([
+      apiFetch('/api/admin/mood'),
+      apiFetch('/api/admin/charts'),
+    ]);
+
+    document.getElementById('moodStats').innerHTML = `
+      <div class="stat-card blue"><div class="stat-label">Total Logs</div><div class="stat-value blue">${data.total}</div></div>
+      <div class="stat-card green"><div class="stat-label">Avg Score</div><div class="stat-value green">${data.avg_score}</div><div class="stat-change" style="color:var(--muted)">/ 10</div></div>
+      <div class="stat-card red"><div class="stat-label">Crisis Logs</div><div class="stat-value red">${data.crisis_count}</div><div class="stat-change down">Score ≤ 2</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Mood Types</div><div class="stat-value yellow">${Object.keys(data.mood_dist).length}</div></div>`;
+
+    renderBarChart('moodChart', charts.mood, charts.labels, 'green-bar');
+
+    document.getElementById('moodTagsBody').innerHTML = data.top_tags.length === 0
+      ? '<div style="color:var(--muted);font-size:13px">No tags logged yet</div>'
+      : `<div style="display:flex;flex-wrap:wrap;gap:8px">${data.top_tags.map(t =>
+          `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--accent);font-weight:600">${t.tag}</span>
+            <span class="badge badge-muted">${t.count}</span>
+          </div>`).join('')}</div>`;
+
+    const moodColors = {great:'var(--green)',good:'var(--accent)',okay:'var(--muted)',low:'var(--yellow)',awful:'var(--red)'};
+    document.getElementById('moodLogsBody').innerHTML = data.recent_logs.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No mood logs yet</td></tr>'
+      : data.recent_logs.map(m => `<tr>
+          <td><span class="badge badge-blue">${m.user_name}</span></td>
+          <td style="color:${moodColors[m.mood]||'var(--soft)'};font-weight:600;font-size:12px">${m.mood}</td>
+          <td><div class="mood-bar-wrap"><div class="mood-bar-track" style="width:60px"><div class="mood-bar-fill" style="width:${m.score*10}%;background:${m.score<=2?'var(--red)':m.score<=5?'var(--yellow)':'var(--green)'}"></div></div><span style="font-family:'Space Mono',monospace;font-size:11px">${m.score}</span></div></td>
+          <td style="font-size:12px;color:var(--soft);max-width:180px">${m.note||'—'}</td>
+          <td style="font-size:11px;color:var(--muted)">${m.tags||'—'}</td>
+          <td class="td-id">${fmtTime(m.created_at)}</td>
+        </tr>`).join('');
+  } catch(e) {
+    document.getElementById('moodStats').innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px">Error: ${e.message}</div>`;
+  }
+}
+
+// ── THERAPISTS ──────────────────────────────────
+async function loadTherapists() {
+  try {
+    const data = await apiFetch('/api/admin/therapists');
+    const availColor = {online:'badge-green',busy:'badge-yellow',offline:'badge-muted'};
+    const colors = ['#58a6ff','#bc8cff','#3fb950','#e3b341','#f85149','#ff7eb6','#39d353','#d29922'];
+    document.getElementById('therapistsBody').innerHTML = data.therapists.length === 0
+      ? '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">No therapists yet — add one!</td></tr>'
+      : data.therapists.map((t, i) => {
+          const initials = t.name.replace('Dr. ','').split(' ').map(x=>x[0]).join('').slice(0,2);
+          return `<tr>
+            <td><div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar" style="background:${colors[i%colors.length]}">${t.avatar_emoji||initials}</div>
+              <div><div style="font-weight:500">${t.name}</div><div class="td-id">${t.id.slice(0,8)}...</div></div>
+            </div></td>
+            <td style="font-size:12px;color:var(--soft)">${t.specialization}</td>
+            <td style="font-size:11px;color:var(--muted)">${t.approaches||'—'}</td>
+            <td style="font-size:11px;color:var(--muted)">${t.languages||'—'}</td>
+            <td><span style="color:var(--yellow);font-family:'Space Mono',monospace;font-size:12px">★ ${t.rating}</span></td>
+            <td><span class="badge badge-blue">${t.booking_count}</span></td>
+            <td><span class="badge ${availColor[t.availability]||'badge-muted'}">${t.availability==='online'?'● ':t.availability==='busy'?'◌ ':'○ '}${t.availability}</span></td>
+            <td><button class="btn btn-ghost btn-sm" onclick="showToast('Editing ${t.name}','🩺')">Edit</button></td>
+          </tr>`;
+        }).join('');
+  } catch(e) {
+    document.getElementById('therapistsBody').innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:20px">Error: ${e.message}</td></tr>`;
+  }
+}
+
+async function addTherapist() {
+  const name = document.getElementById('tName').value.trim();
+  const spec = document.getElementById('tSpec').value.trim();
+  if (!name || !spec) { showToast('Name and specialization required', '❌', 'red'); return; }
+  try {
+    await fetch(`${Q('/api/admin/therapists')}&name=${encodeURIComponent(name)}&specialization=${encodeURIComponent(spec)}&approaches=${encodeURIComponent(document.getElementById('tApproach').value)}&languages=${encodeURIComponent(document.getElementById('tLangs').value)}&bio=${encodeURIComponent(document.getElementById('tBio').value)}`, { method: 'POST' });
+    closeModal('addTherapistModal');
+    showToast(`${name} added successfully`, '🩺');
+    loadTherapists();
+  } catch(e) { showToast('Error adding therapist', '❌', 'red'); }
+}
+
+// ── BOOKINGS ────────────────────────────────────
+async function loadBookings() {
+  try {
+    const data = await apiFetch('/api/admin/bookings');
+    document.getElementById('bookingStats').innerHTML = `
+      <div class="stat-card green"><div class="stat-label">Confirmed</div><div class="stat-value green">${data.stats.confirmed}</div></div>
+      <div class="stat-card yellow"><div class="stat-label">Pending</div><div class="stat-value yellow">${data.stats.pending}</div></div>
+      <div class="stat-card red"><div class="stat-label">Cancelled</div><div class="stat-value red">${data.stats.cancelled}</div></div>
+      <div class="stat-card blue"><div class="stat-label">Total</div><div class="stat-value blue">${data.stats.total}</div></div>`;
+
+    const statusBadge = {confirmed:'badge-green',pending:'badge-yellow',cancelled:'badge-red'};
+    document.getElementById('bookingsBody').innerHTML = data.bookings.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted)">No bookings yet</td></tr>'
+      : data.bookings.map(b => `<tr>
+          <td><span class="badge badge-blue">${b.user_name}</span></td>
+          <td style="font-size:12px;color:var(--soft)">${b.therapist_name}</td>
+          <td class="td-id">${fmtTime(b.scheduled_at)}</td>
+          <td><span class="badge ${statusBadge[b.status]||'badge-muted'}">${b.status}</span></td>
+          <td style="font-size:11px;color:var(--soft);max-width:180px">${b.notes||'—'}</td>
+          <td><div style="display:flex;gap:6px">
+            ${b.status==='pending' ? `<button class="btn btn-primary btn-sm" onclick="updateBooking('${b.id}','confirmed')">Confirm</button>` : ''}
+            ${b.status!=='cancelled' ? `<button class="btn btn-danger btn-sm" onclick="updateBooking('${b.id}','cancelled')">Cancel</button>` : ''}
+          </div></td>
+        </tr>`).join('');
+  } catch(e) {
+    document.getElementById('bookingStats').innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px">Error: ${e.message}</div>`;
+  }
+}
+
+async function updateBooking(id, status) {
+  try {
+    await fetch(Q(`/api/admin/bookings/${id}`) + `&status=${status}`, { method: 'PATCH' });
+    showToast(`Booking ${status}`, '✅');
+    loadBookings();
+  } catch(e) { showToast('Error updating booking', '❌', 'red'); }
+}
+
+// ── CHARTS ──────────────────────────────────────
+function renderBarChart(elId, data, labels, cls) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const max = Math.max(...data.filter(v => v > 0)) || 1;
+  el.innerHTML = data.map((v, i) => `
+    <div class="chart-col">
+      <div class="chart-bar-fill ${cls}" style="height:${Math.max((v/max)*100, v>0?4:1)}px" title="${labels[i]}: ${v}"></div>
+      <div class="chart-x-label">${labels[i] ? labels[i].slice(0,4) : ''}</div>
+    </div>`).join('');
+}
+
+// ── PANEL SWITCHING ─────────────────────────────
+function switchPanel(name, btn) {
+  currentPanel = name;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  const titles = {dashboard:'Dashboard',users:'Users',crisis:'Crisis Alerts',chats:'Chat Sessions',mood:'Mood Analytics',therapists:'Therapists',bookings:'Bookings',settings:'Settings'};
+  document.getElementById('topbarTitle').textContent = titles[name] || name;
+
+  if (name === 'users')      loadUsers();
+  if (name === 'crisis')     loadCrisis();
+  if (name === 'chats')      loadChats();
+  if (name === 'mood')       loadMood();
+  if (name === 'therapists') loadTherapists();
+  if (name === 'bookings')   loadBookings();
+}
+
+// ── HELPERS ─────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+}
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function updateRefreshTime() {
+  document.getElementById('lastRefresh').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+// ── MODALS ──────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); });
+
+// ── TOAST ───────────────────────────────────────
+function showToast(msg, icon='✅', type='') {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if (type === 'red') t.style.borderColor = 'rgba(248,81,73,0.3)';
+  t.innerHTML = `<span style="font-size:18px">${icon}</span><span style="flex:1">${msg}</span><span onclick="this.parentElement.remove()" style="cursor:pointer;color:var(--muted)">✕</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── REFRESH ALL ─────────────────────────────────
+function refreshAll() {
+  if (currentPanel === 'dashboard')   loadDashboard();
+  else if (currentPanel === 'users')  loadUsers();
+  else if (currentPanel === 'crisis') loadCrisis();
+  else if (currentPanel === 'chats')  loadChats();
+  else if (currentPanel === 'mood')   loadMood();
+  else if (currentPanel === 'therapists') loadTherapists();
+  else if (currentPanel === 'bookings')   loadBookings();
+  showToast('Data refreshed', '🔄');
+}
+
+// ── INIT + AUTO REFRESH ─────────────────────────
+window.addEventListener('load', () => {
+  loadDashboard();
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    if (currentPanel === 'dashboard') loadDashboard();
+    if (currentPanel === 'crisis')    loadCrisis();
+  }, 30000);
+});
+</script>
+</body>
+</html>
